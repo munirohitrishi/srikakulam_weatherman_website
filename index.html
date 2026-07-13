@@ -3,319 +3,172 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Srikakulam Weatherman | శ్రీకాకుళం వెదర్మ్యాన్</title>
+    <title>Srikakulam Weatherman</title>
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Telugu:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;400;500;600&family=Noto+Sans+Telugu:wght@400;500;600&display=swap" rel="stylesheet">
     
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     
     <!-- Custom CSS -->
     <link rel="stylesheet" href="parts/styles.css">
-    
-    <style>
-        /* Additional app-specific utility classes not in styles.css */
-        .hidden { display: none !important; }
-        .map-container { width: 100%; height: 500px; border-radius: var(--glass-radius); overflow: hidden; border: 1px solid var(--glass-border); margin-bottom: var(--space-xl); position: relative; z-index: 10;}
-        .chart-container { height: 300px; position: relative; padding: var(--space-md); }
-        .instagram-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: var(--space-md); }
-        .insta-post { border-radius: 12px; overflow: hidden; position: relative; aspect-ratio: 1; border: 1px solid var(--glass-border); transition: transform var(--speed-normal); cursor: pointer;}
-        .insta-post:hover { transform: scale(1.02); }
-        .insta-post img { width: 100%; height: 100%; object-fit: cover; }
-        .insta-overlay { position: absolute; inset: 0; background: linear-gradient(transparent, rgba(0,0,0,0.8)); display: flex; flex-direction: column; justify-content: flex-end; padding: var(--space-md); opacity: 0; transition: opacity var(--speed-fast); }
-        .insta-post:hover .insta-overlay { opacity: 1; }
-        .profile-hero { text-align: center; margin-bottom: var(--space-3xl); }
-        .profile-hero img { width: 200px; height: 200px; border-radius: 50%; object-fit: cover; margin: 0 auto var(--space-lg); border: 4px solid var(--monsoon-teal); box-shadow: var(--shadow-glow); }
-        
-        /* Location Selector Modal */
-        #location-modal { position: fixed; inset: 0; z-index: 2000; background: rgba(10, 37, 64, 0.9); backdrop-filter: blur(20px); display: none; align-items: center; justify-content: center; }
-        #location-modal.active { display: flex; }
-        .loc-modal-content { max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; padding: var(--space-xl); border-radius: var(--glass-radius); }
-        .loc-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-lg); }
-        .loc-list { display: flex; flex-direction: column; gap: var(--space-sm); }
-        .loc-item { padding: var(--space-md); background: var(--glass-white); border: 1px solid var(--glass-border); border-radius: 8px; cursor: pointer; display: flex; justify-content: space-between; transition: all 0.2s; }
-        .loc-item:hover { background: var(--glass-white-hover); border-color: var(--monsoon-teal); }
-        .loc-item.active { background: rgba(0, 212, 170, 0.15); border-color: var(--monsoon-teal); }
-        
-        .section-header { margin-bottom: var(--space-xl); }
-        .section-header h2 { font-size: 2rem; margin-bottom: var(--space-xs); color: var(--monsoon-teal); }
-        
-        .stats-grid, .forecast-grid, .advisory-grid { margin-bottom: var(--space-2xl); }
-        .hero { position: relative; }
-        .hero-overlay { pointer-events: none; }
-        .hero-overlay > * { pointer-events: auto; }
-        
-        .alert-item { border-left: 4px solid var(--warning-orange); padding-left: var(--space-md); margin-bottom: var(--space-md); }
-        .alert-item.severity-emergency { border-left-color: var(--alert-red); }
-        .alert-item.severity-watch { border-left-color: var(--alert-yellow); }
-    </style>
 </head>
-<body data-theme="rainy">
+<body data-theme="cloudy">
 
-    <!-- Alert Banner -->
-    <div id="alert-banner" class="alert-banner alert-banner--warning hidden">
-        <span class="alert-icon">⚠️</span>
-        <span id="alert-banner-text" data-i18n="alerts.heavyRain">Heavy Rainfall Warning for Srikakulam</span>
-        <button class="alert-close" onclick="document.getElementById('alert-banner').classList.add('hidden')">×</button>
-    </div>
+    <!-- 3D Canvas Background -->
+    <canvas id="weather-canvas" class="hero-canvas"></canvas>
 
-    <!-- Navbar -->
-    <nav class="navbar glass-nav">
-        <div class="nav-logo">
-            <img src="mainphoto.jpg" alt="Srikakulam Weatherman" class="nav-logo-img" onerror="this.src='https://ui-avatars.com/api/?name=SW&background=00D4AA&color=fff'">
-            <div class="nav-logo-text">Srikakulam <span>Weatherman</span></div>
+    <div class="app-container">
+        
+        <!-- Top Header -->
+        <header class="top-header">
+            <div class="location-selector" onclick="document.getElementById('location-modal').classList.add('active')">
+                <span id="current-loc-name">Srikakulam</span>
+                <span style="font-size: 0.8rem;">📍</span>
+            </div>
+            <div class="nav-actions">
+                <button id="lang-toggle" class="btn-icon">తెలుగు</button>
+            </div>
+        </header>
+
+        <!-- Main Hero -->
+        <section class="hero">
+            <div id="data-status" class="text-muted" style="font-size: 0.8rem; margin-bottom: 5px;">Connecting...</div>
+            <div class="hero-temp" id="hero-temp">29°</div>
+            <div class="hero-condition" id="hero-condition" data-i18n="conditions.cloudy">Cloudy</div>
+            <div class="hero-highlow">
+                H:<span id="hero-high">32°</span> L:<span id="hero-low">25°</span>
+            </div>
+        </section>
+
+        <!-- Alert Banner -->
+        <div id="alert-banner" class="alert-banner hidden">
+            <div>
+                <span class="alert-icon">⚠️</span>
+                <strong id="alert-banner-text">Heavy Rainfall Warning</strong>
+            </div>
+            <button class="btn-icon" onclick="document.getElementById('alert-banner').classList.add('hidden')">×</button>
+        </div>
+
+        <!-- Hourly Forecast -->
+        <div class="ios-card">
+            <div class="card-header">
+                <span>🕒</span> <span data-i18n="weather.hourly">Hourly Forecast</span>
+            </div>
+            <div class="hourly-strip" id="hourly-container">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+
+        <!-- 7-Day Forecast -->
+        <div class="ios-card">
+            <div class="card-header">
+                <span>📅</span> <span data-i18n="weather.daily">7-Day Forecast</span>
+            </div>
+            <div class="daily-list" id="daily-container">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+
+        <!-- Widget Grid -->
+        <div class="widget-grid">
+            <!-- Wind -->
+            <div class="ios-card" style="margin-bottom: 0;">
+                <div class="card-header"><span>🌬️</span> <span data-i18n="weather.windSpeed">Wind</span></div>
+                <div class="widget-value"><span id="metric-wind">18</span> <span style="font-size:1rem" data-i18n="units.kmh">km/h</span></div>
+                <div class="widget-desc">Blowing constantly</div>
+            </div>
+            
+            <!-- Humidity -->
+            <div class="ios-card" style="margin-bottom: 0;">
+                <div class="card-header"><span>💧</span> <span data-i18n="weather.humidity">Humidity</span></div>
+                <div class="widget-value"><span id="metric-humidity">87</span>%</div>
+                <div class="widget-desc">The dew point is <span id="metric-dew">26</span>° right now.</div>
+            </div>
+
+            <!-- Feels Like -->
+            <div class="ios-card" style="margin-bottom: 0;">
+                <div class="card-header"><span>🌡️</span> <span data-i18n="weather.feelsLike">Feels Like</span></div>
+                <div class="widget-value"><span id="metric-feels">34</span>°</div>
+                <div class="widget-desc">Humidity is making it feel hotter.</div>
+            </div>
+
+            <!-- Rainfall -->
+            <div class="ios-card" style="margin-bottom: 0;">
+                <div class="card-header"><span>☔</span> <span data-i18n="weather.rainfall">Rainfall</span></div>
+                <div class="widget-value"><span id="metric-rain">4.2</span> <span style="font-size:1rem" data-i18n="units.mm">mm</span></div>
+                <div class="widget-desc">In the last hour.</div>
+            </div>
         </div>
         
-        <div class="nav-links d-none d-md-flex">
-            <a href="#home" class="nav-link active" data-target="home-section" data-i18n="nav.home">Home</a>
-            <a href="#live" class="nav-link" data-target="live-section" data-i18n="nav.liveWeather">Live Weather</a>
-            <a href="#farmer" class="nav-link" data-target="farmer-section" data-i18n="nav.farmersHub">Farmer's Hub</a>
-            <a href="#alerts" class="nav-link" data-target="alerts-section" data-i18n="nav.alerts">Alerts</a>
-            <a href="#about" class="nav-link" data-target="about-section" data-i18n="nav.about">About</a>
+        <br>
+
+        <!-- Map Widget -->
+        <div class="ios-card">
+            <div class="card-header">
+                <span>🗺️</span> <span data-i18n="nav.maps">Map</span>
+            </div>
+            <div id="weather-map" class="map-widget"></div>
         </div>
 
-        <div class="nav-actions">
-            <button id="location-btn" class="lang-toggle" style="background: transparent; border: 1px solid var(--glass-border);">📍 <span id="current-loc-name">Srikakulam</span></button>
-            <button id="lang-toggle" class="lang-toggle" data-i18n="ui.languageToggle">తెలుగు</button>
-            <div class="hamburger" id="mobile-menu-btn">
-                <span></span><span></span><span></span>
+        <!-- Farmer's Hub (Special Green Cards) -->
+        <div class="farmer-hub" style="margin-top: 20px;">
+            <h3 style="margin-left: 10px; margin-bottom: 10px;" data-i18n="farmer.dashboard">Farmer's Dashboard</h3>
+            
+            <div class="ios-card">
+                <div class="advisory-row">
+                    <div class="advisory-title">🚜 <span data-i18n="farmer.sprayAdvisory">Spray Advisory</span></div>
+                    <div class="advisory-status status-bad" id="spray-status" data-i18n="farmer.notSuitable">Not Suitable</div>
+                </div>
+                <div class="widget-desc" id="spray-reason">High chances of rainfall today.</div>
+            </div>
+
+            <div class="ios-card">
+                <div class="advisory-row">
+                    <div class="advisory-title">💧 <span data-i18n="farmer.irrigationAdvice">Irrigation Advice</span></div>
+                    <div class="advisory-status status-good" id="irrigation-status" data-i18n="farmer.notSuitable">Not Needed</div>
+                </div>
+                <div class="widget-desc" id="irrigation-reason">Recent rainfall has provided adequate moisture.</div>
             </div>
         </div>
-    </nav>
 
-    <!-- Mobile Menu -->
-    <div class="mobile-menu" id="mobile-menu">
-        <a href="#home" class="mobile-link active" data-target="home-section" data-i18n="nav.home">Home</a>
-        <a href="#live" class="mobile-link" data-target="live-section" data-i18n="nav.liveWeather">Live Weather</a>
-        <a href="#farmer" class="mobile-link" data-target="farmer-section" data-i18n="nav.farmersHub">Farmer's Hub</a>
-        <a href="#alerts" class="mobile-link" data-target="alerts-section" data-i18n="nav.alerts">Alerts</a>
-        <a href="#about" class="mobile-link" data-target="about-section" data-i18n="nav.about">About</a>
+        <!-- Footer -->
+        <div style="text-align: center; margin-top: 40px;">
+            <img src="mainphoto.jpg" alt="Weatherman" style="width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 15px auto; border: 2px solid rgba(255,255,255,0.5);">
+            <div style="font-weight: 500;">Srikakulam Weatherman</div>
+            <div class="text-muted" style="font-size: 0.9rem; margin-bottom: 20px;" data-i18n="footer.tagline">Built for the community</div>
+            <a href="https://www.instagram.com/srikakulam_weatherman" target="_blank" style="background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; font-size: 0.9rem;">
+                Follow on Instagram
+            </a>
+        </div>
+
     </div>
-
-    <!-- Main Content Sections -->
-    <main>
-        <!-- HOME SECTION (3D GLOBE + HERO) -->
-        <section id="home-section" class="page-section active" style="padding: 0; min-height: 100vh;">
-            <div class="hero">
-                <!-- 3D Canvas -->
-                <canvas id="weather-canvas" class="hero-canvas"></canvas>
-                
-                <div class="hero-overlay container">
-                    <div class="hero-content">
-                        <div class="hero-location" style="cursor:pointer;" onclick="document.getElementById('location-modal').classList.add('active')">
-                            📍 <span id="hero-loc-name">Srikakulam</span>
-                        </div>
-                        <div class="hero-temp-row">
-                            <div class="current-temp" id="hero-temp">29°</div>
-                            <div class="condition-badge">
-                                <span class="badge-icon">🌧️</span>
-                                <span id="hero-condition" data-i18n="conditions.heavyRain">Heavy Rain</span>
-                            </div>
-                        </div>
-                        <div class="hero-meta">
-                            <div class="hero-meta-item">
-                                <span data-i18n="weather.feelsLike">Feels Like</span>: <span class="value" id="hero-feels">34°C</span>
-                            </div>
-                            <div class="hero-meta-item">
-                                <span data-i18n="weather.humidity">Humidity</span>: <span class="value" id="hero-humidity">87%</span>
-                            </div>
-                            <div class="hero-meta-item">
-                                <span data-i18n="weather.windSpeed">Wind</span>: <span class="value" id="hero-wind">18 km/h</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- LIVE WEATHER SECTION -->
-        <section id="live-section" class="page-section">
-            <div class="container">
-                <div class="section-header">
-                    <h2 data-i18n="nav.liveWeather">Live Weather & Maps</h2>
-                    <p id="last-updated" data-i18n="ui.lastUpdated">Last updated: Loading live data…</p>
-                    <p id="data-status" class="text-small" aria-live="polite"></p>
-                </div>
-                
-                <div class="stats-grid">
-                    <div class="glass-card weather-metric">
-                        <div class="metric-icon">🌡️</div>
-                        <div class="metric-label" data-i18n="weather.temperature">Temperature</div>
-                        <div class="metric-value"><span id="metric-temp">29</span><span class="metric-unit">°C</span></div>
-                    </div>
-                    <div class="glass-card weather-metric">
-                        <div class="metric-icon">💧</div>
-                        <div class="metric-label" data-i18n="weather.rainfall">Rainfall (1h)</div>
-                        <div class="metric-value"><span id="metric-rain">4.2</span><span class="metric-unit" data-i18n="units.mm">mm</span></div>
-                    </div>
-                    <div class="glass-card weather-metric">
-                        <div class="metric-icon">🌬️</div>
-                        <div class="metric-label" data-i18n="weather.windSpeed">Wind Speed</div>
-                        <div class="metric-value"><span id="metric-wind">18</span><span class="metric-unit" data-i18n="units.kmh">km/h</span></div>
-                    </div>
-                    <div class="glass-card weather-metric">
-                        <div class="metric-icon">💨</div>
-                        <div class="metric-label" data-i18n="weather.aqi">Air Quality</div>
-                        <div class="metric-value"><span id="metric-aqi">68</span><span class="metric-unit">AQI</span></div>
-                    </div>
-                </div>
-
-                <!-- Leaflet Map -->
-                <div id="weather-map" class="map-container"></div>
-
-                <div class="content-grid">
-                    <!-- Hourly Temp Chart -->
-                    <div class="glass-card">
-                        <h3 data-i18n="weather.hourly" style="margin-bottom: var(--space-md);">Hourly Forecast</h3>
-                        <div class="chart-container">
-                            <canvas id="temp-chart"></canvas>
-                        </div>
-                    </div>
-                    <!-- 7 Day Rain Chart -->
-                    <div class="glass-card">
-                        <h3 data-i18n="weather.daily" style="margin-bottom: var(--space-md);">7-Day Forecast</h3>
-                        <div class="chart-container">
-                            <canvas id="rain-chart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- FARMER'S HUB SECTION -->
-        <section id="farmer-section" class="page-section">
-            <div class="container">
-                <div class="farmer-header">
-                    <h2 data-i18n="farmer.dashboard">Farmer's Dashboard</h2>
-                    <p data-i18n="farmer.windAdvisory" style="color: rgba(255,255,255,0.9);">Actionable intelligence for Srikakulam agriculture.</p>
-                </div>
-                
-                <div class="advisory-grid">
-                    <div class="glass-card-farmer advisory-card">
-                        <div class="advisory-status">
-                            <div id="spray-icon" style="font-size: 2.5rem;">❌</div>
-                            <div>
-                                <h3 class="advisory-title" data-i18n="farmer.sprayAdvisory">Spray Advisory</h3>
-                                <div id="spray-status" style="font-weight: bold; color: var(--alert-red);" data-i18n="farmer.notSuitable">Not Suitable</div>
-                            </div>
-                        </div>
-                        <p id="spray-reason">High chances of rainfall and strong winds today.</p>
-                        <p class="text-small" style="margin-top: var(--space-sm);">Next Window: <strong id="spray-window">Tomorrow afternoon</strong></p>
-                    </div>
-
-                    <div class="glass-card-farmer advisory-card">
-                        <div class="advisory-status">
-                            <div id="irrigation-icon" style="font-size: 2.5rem;">✅</div>
-                            <div>
-                                <h3 class="advisory-title" data-i18n="farmer.irrigationAdvice">Irrigation Advice</h3>
-                                <div id="irrigation-status" style="font-weight: bold; color: var(--monsoon-teal);" data-i18n="farmer.notSuitable">Not Needed</div>
-                            </div>
-                        </div>
-                        <p id="irrigation-reason">Recent rainfall has provided adequate soil moisture.</p>
-                        <p class="text-small" style="margin-top: var(--space-sm);">7-Day Rainfall: <strong id="irrigation-rain">127 mm</strong></p>
-                    </div>
-
-                    <div class="glass-card-farmer advisory-card">
-                        <div class="advisory-status"><div id="harvest-icon" style="font-size: 2.5rem;">⚠️</div><div><h3 class="advisory-title">Harvest Outlook</h3><div id="harvest-status" style="font-weight: bold;">Checking…</div></div></div>
-                        <p id="harvest-reason">Loading live forecast.</p>
-                    </div>
-
-                    <div class="glass-card-farmer advisory-card">
-                        <div class="advisory-status"><div id="disease-icon" style="font-size: 2.5rem;">🟢</div><div><h3 class="advisory-title">Crop Disease Risk</h3><div id="disease-status" style="font-weight: bold;">Checking…</div></div></div>
-                        <p id="disease-reason">Loading live conditions.</p>
-                    </div>
-
-                    <div class="glass-card-farmer advisory-card">
-                        <div class="advisory-status"><div id="fishing-icon" style="font-size: 2.5rem;">⚠️</div><div><h3 class="advisory-title">Fishing Advisory</h3><div id="fishing-status" style="font-weight: bold;">Checking…</div></div></div>
-                        <p id="fishing-reason">Loading live wind conditions.</p>
-                    </div>
-                </div>
-
-                <div class="glass-card-farmer" style="margin-bottom: var(--space-xl);">
-                    <h3 data-i18n="farmer.cropAdvisory" style="margin-bottom: var(--space-md);">Crop Advisory</h3>
-                    <div id="crop-tips-container" class="loc-list">
-                        <!-- Filled by JS -->
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- ALERTS SECTION -->
-        <section id="alerts-section" class="page-section">
-            <div class="container">
-                <div class="section-header">
-                    <h2 data-i18n="alerts.title">Active Alerts</h2>
-                </div>
-                <div id="alerts-container" class="glass-card">
-                    <!-- Filled by JS -->
-                </div>
-            </div>
-        </section>
-
-        <!-- ABOUT SECTION -->
-        <section id="about-section" class="page-section">
-            <div class="container">
-                <div class="profile-hero">
-                    <img src="mainphoto.jpg" alt="Srikakulam Weatherman" onerror="this.src='https://ui-avatars.com/api/?name=SW&background=00D4AA&color=fff&size=200'">
-                    <h1 class="display-lg">Srikakulam Weatherman</h1>
-                    <p data-i18n="footer.tagline">Built for the community of Srikakulam</p>
-                    <div style="margin-top: var(--space-md);">
-                        <a href="https://www.instagram.com/srikakulam_weatherman" target="_blank" class="lang-toggle" style="background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); color: white; border: none; padding: 10px 20px;">
-                            Follow on Instagram
-                        </a>
-                    </div>
-                </div>
-
-                <div class="content-grid">
-                    <div>
-                        <div class="glass-card" style="margin-bottom: var(--space-lg);">
-                            <h3 data-i18n="about.mission" style="margin-bottom: var(--space-md); color: var(--monsoon-teal);">Our Mission</h3>
-                            <p data-i18n="about.missionText">To provide hyper-local, accurate weather forecasts for Srikakulam district. We aim to protect lives and support farmers with actionable intelligence.</p>
-                        </div>
-                        <div class="glass-card">
-                            <h3 data-i18n="about.story" style="margin-bottom: var(--space-md); color: var(--monsoon-teal);">The Story</h3>
-                            <p data-i18n="about.storyText">Started as a passion project, Srikakulam Weatherman has grown into a trusted community resource for thousands of people across the district.</p>
-                        </div>
-                    </div>
-                    
-                    <div class="glass-card">
-                        <h3 data-i18n="about.instagram" style="margin-bottom: var(--space-md); text-align: center;">Latest from Instagram</h3>
-                        <div class="instagram-grid" id="insta-feed">
-                            <!-- Filled by JS -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </main>
 
     <!-- Location Modal -->
-    <div id="location-modal">
-        <div class="glass-card loc-modal-content">
-            <div class="loc-modal-header">
+    <div id="location-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
                 <h3 data-i18n="ui.selectLocation">Select Location</h3>
-                <button class="alert-close" onclick="document.getElementById('location-modal').classList.remove('active')" style="position: static; background: var(--glass-white); color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">✕</button>
+                <button class="close-modal" onclick="document.getElementById('location-modal').classList.remove('active')">✕</button>
             </div>
             <div class="loc-list" id="location-list">
-                <!-- Filled by JS -->
+                <!-- Injected via JS -->
             </div>
         </div>
     </div>
 
     <!-- Scripts -->
-    <!-- External Dependencies -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 
     <!-- App Parts -->
     <script src="parts/data.js"></script>
     <script src="parts/scene.js"></script>
     <script src="parts/api.js"></script>
+    
     <!-- Main App Logic -->
     <script>
         // Global State
@@ -338,326 +191,218 @@
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
                 const translation = t(key);
-                if (translation) {
-                    if (el.tagName === 'INPUT' && el.type === 'placeholder') {
-                        el.placeholder = translation;
-                    } else {
-                        el.textContent = translation;
-                    }
-                }
+                if (translation) el.textContent = translation;
             });
             
-            // Re-render components that depend on translation strings
-            renderCropTips();
-            renderAlerts();
-            renderInstagram();
-            renderLocations();
-            
-            // Update charts and map labels if they exist
-            if (typeof initWeatherCharts === 'function') updateCharts(window.currentLocation);
-            if (typeof updateMapLanguage === 'function') updateMapLanguage();
-
-            // Toggle button text
             document.getElementById('lang-toggle').textContent = window.currentLang === 'en' ? 'తెలుగు' : 'English';
+            if (window.currentLang === 'te') document.body.classList.add('telugu');
+            else document.body.classList.remove('telugu');
+
+            renderLocations();
+            const location = LOCATIONS.find(l => l.id === window.currentLocation);
+            document.getElementById('current-loc-name').textContent = location.name[window.currentLang];
             
-            // Update body font class for Telugu
-            if (window.currentLang === 'te') {
-                document.body.classList.add('telugu');
-            } else {
-                document.body.classList.remove('telugu');
+            // Re-render hourly/daily to update days/times
+            if(MOCK_WEATHER_BY_LOCATION[window.currentLocation]) {
+                const weather = MOCK_WEATHER_BY_LOCATION[window.currentLocation];
+                renderForecasts(weather);
+                renderFarmerHub();
+                updateWeatherInterface(window.currentLocation, weather); // updates condition text
             }
         }
 
-        // Location Update Logic
+        // Generate UI from Weather Data
+        function renderForecasts(weather) {
+            // Hourly
+            const hContainer = document.getElementById('hourly-container');
+            hContainer.innerHTML = '';
+            weather.hourly.slice(0, 24).forEach((h, i) => {
+                const date = new Date(h.time * 1000);
+                let timeStr = date.getHours() === new Date().getHours() && i === 0 ? t('time.now') : date.getHours() + ':00';
+                
+                // Map condition to emoji
+                const emojiMap = { 'sunny': '☀️', 'clearNight': '🌙', 'cloudy': '☁️', 'partlyCloudy': '⛅', 'rainy': '🌧️', 'heavyRain': '⛈️', 'thunderstorm': '🌩️', 'foggy': '🌫️', 'hazy': '🌫️', 'drizzle': '🌦️' };
+                const emoji = emojiMap[h.condition] || '☁️';
+                
+                hContainer.innerHTML += `
+                    <div class="hourly-item">
+                        <div class="hourly-time">${timeStr}</div>
+                        <div class="hourly-icon">${emoji}</div>
+                        <div class="hourly-temp">${Math.round(h.temp)}°</div>
+                    </div>
+                `;
+            });
+
+            // Daily
+            const dContainer = document.getElementById('daily-container');
+            dContainer.innerHTML = '';
+            
+            const maxOfAll = Math.max(...weather.daily.map(d => d.temp.max));
+            const minOfAll = Math.min(...weather.daily.map(d => d.temp.min));
+            const range = maxOfAll - minOfAll;
+
+            weather.daily.forEach((d, i) => {
+                const date = new Date(d.date);
+                const dayStr = i === 0 ? t('time.today') : t('days.' + ['sun','mon','tue','wed','thu','fri','sat'][date.getDay()]);
+                const emojiMap = { 'sunny': '☀️', 'clearNight': '🌙', 'cloudy': '☁️', 'partlyCloudy': '⛅', 'rainy': '🌧️', 'heavyRain': '⛈️', 'thunderstorm': '🌩️', 'foggy': '🌫️', 'hazy': '🌫️', 'drizzle': '🌦️' };
+                const emoji = emojiMap[d.condition] || '☁️';
+
+                // Calculate bar positions
+                const leftPercent = ((d.temp.min - minOfAll) / range) * 100;
+                const widthPercent = ((d.temp.max - d.temp.min) / range) * 100;
+
+                dContainer.innerHTML += `
+                    <div class="daily-item">
+                        <div class="daily-day">${dayStr}</div>
+                        <div class="daily-icon-col">${emoji}</div>
+                        <div class="daily-temps">
+                            <span class="temp-min">${Math.round(d.temp.min)}°</span>
+                            <div class="temp-bar-container">
+                                <div class="temp-bar" style="left: ${leftPercent}%; width: ${widthPercent}%;"></div>
+                            </div>
+                            <span class="temp-max">${Math.round(d.temp.max)}°</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function renderFarmerHub() {
+            const spray = FARMER_ADVISORIES.sprayAdvisory;
+            const sprayStatus = document.getElementById('spray-status');
+            document.getElementById('spray-reason').textContent = spray.reason[window.currentLang];
+            
+            if (spray.suitable) {
+                sprayStatus.textContent = window.currentLang === 'te' ? 'అనుకూలం' : 'Suitable';
+                sprayStatus.className = 'advisory-status status-good';
+            } else {
+                sprayStatus.textContent = window.currentLang === 'te' ? 'అనుకూలం కాదు' : 'Not Suitable';
+                sprayStatus.className = 'advisory-status status-bad';
+            }
+            
+            const irr = FARMER_ADVISORIES.irrigationAdvice;
+            const irrStatus = document.getElementById('irrigation-status');
+            document.getElementById('irrigation-reason').textContent = irr.reason[window.currentLang];
+            
+            if (irr.needed) {
+                irrStatus.textContent = window.currentLang === 'te' ? 'అవసరం' : 'Needed';
+                irrStatus.className = 'advisory-status status-bad';
+            } else {
+                irrStatus.textContent = window.currentLang === 'te' ? 'అవసరం లేదు' : 'Not Needed';
+                irrStatus.className = 'advisory-status status-good';
+            }
+        }
+
         function updateWeatherInterface(locId, weather) {
             window.currentLocation = locId;
             const locData = LOCATIONS.find(l => l.id === locId);
             
-            // Update UI
+            // Header Info
             document.getElementById('current-loc-name').textContent = locData.name[window.currentLang];
-            document.getElementById('hero-loc-name').textContent = locData.name[window.currentLang];
             document.getElementById('hero-temp').textContent = Math.round(weather.current.main.temp) + '°';
             
-            const liveCondition = weather.current.conditionText && weather.current.conditionText[window.currentLang];
             const condKey = 'conditions.' + weather.current.condition;
-            document.getElementById('hero-condition').textContent = liveCondition || t(condKey) || weather.current.condition;
+            document.getElementById('hero-condition').textContent = t(condKey) || weather.current.condition;
             
-            document.getElementById('hero-feels').textContent = Math.round(weather.current.main.feels_like) + '°C';
-            document.getElementById('hero-humidity').textContent = weather.current.main.humidity + '%';
-            document.getElementById('hero-wind').textContent = weather.current.main.wind.speed + ' km/h';
+            document.getElementById('hero-high').textContent = Math.round(weather.daily[0]?.temp.max || weather.current.main.temp_max) + '°';
+            document.getElementById('hero-low').textContent = Math.round(weather.daily[0]?.temp.min || weather.current.main.temp_min) + '°';
             
-            document.getElementById('metric-temp').textContent = Math.round(weather.current.main.temp);
+            // Widgets
+            document.getElementById('metric-wind').textContent = Math.round(weather.current.wind.speed);
+            document.getElementById('metric-humidity').textContent = weather.current.main.humidity;
+            document.getElementById('metric-feels').textContent = Math.round(weather.current.main.feels_like);
             document.getElementById('metric-rain').textContent = weather.current.rain ? weather.current.rain['1h'] : '0';
-            document.getElementById('metric-wind').textContent = weather.current.main.wind.speed;
-            document.getElementById('metric-aqi').textContent = weather.current.aqi && weather.current.aqi.value !== null ? weather.current.aqi.value : '—';
             
-            // Update Theme
+            // Optional dew point if it exists
+            const dew = document.getElementById('metric-dew');
+            if (dew) dew.textContent = Math.round(weather.current.main.temp - ((100 - weather.current.main.humidity)/5));
+            
+            // Theme Update
             document.body.setAttribute('data-theme', weather.current.condition);
+            if (typeof updateSceneWeather === 'function') updateSceneWeather(weather.current.condition);
             
-            // Update Scene
-            if (typeof updateSceneWeather === 'function') {
-                updateSceneWeather(weather.current.condition);
+            // Alert Banner
+            if (MOCK_ALERTS.length > 0) {
+                const alert = MOCK_ALERTS[0]; // Just show the top mock alert
+                const banner = document.getElementById('alert-banner');
+                banner.classList.remove('hidden');
+                document.getElementById('alert-banner-text').textContent = alert.title[window.currentLang];
             }
-            if (typeof updateCharts === 'function') {
-                updateCharts(locId);
-            }
-            
-            // Close modal
-            document.getElementById('location-modal').classList.remove('active');
-            renderLocations(); // Update active state
         }
 
         async function updateLocation(locId) {
             window.currentLocation = locId;
             const location = LOCATIONS.find(l => l.id === locId);
             
-            // Show loading state
             const statusEl = document.getElementById('data-status');
             if (statusEl) statusEl.textContent = 'Fetching live data...';
             
-            // Fetch live data
+            // Fetch live data via API
             const liveWeather = await fetchWeatherData(location.lat, location.lon, location.name.en);
             
             if (liveWeather) {
-                // Update global mock for charts to read from
                 MOCK_WEATHER_BY_LOCATION[locId] = liveWeather;
-                
                 updateWeatherInterface(locId, liveWeather);
+                renderForecasts(liveWeather);
                 
                 const adv = generateFarmerAdvisories(liveWeather);
                 FARMER_ADVISORIES.sprayAdvisory = adv.sprayAdvisory;
                 FARMER_ADVISORIES.irrigationAdvice = adv.irrigationAdvice;
+                renderFarmerHub();
                 
-                renderCropTips(); // Updates the DOM using the new FARMER_ADVISORIES
-                
-                document.getElementById('last-updated').textContent = t('ui.lastUpdated') + ': ' + t('time.now');
-                if (statusEl) statusEl.textContent = 'Live data connected (OpenWeatherMap & Tomorrow.io)';
+                if (statusEl) statusEl.textContent = 'Live data connected';
             } else {
                 // Fallback
                 const fallback = MOCK_WEATHER_BY_LOCATION[locId] || MOCK_WEATHER;
                 updateWeatherInterface(locId, fallback);
-                if (statusEl) statusEl.textContent = 'Live data unavailable — showing demo data.';
+                renderForecasts(fallback);
+                renderFarmerHub();
+                if (statusEl) statusEl.textContent = 'Offline — showing demo data.';
+            }
+            
+            document.getElementById('location-modal').classList.remove('active');
+            renderLocations();
+            
+            // Trigger map reposition
+            if (window.dispatchEvent) {
+                window.dispatchEvent(new CustomEvent('locationChange', { detail: { id: locId } }));
             }
         }
 
-        // Render dynamic lists
         function renderLocations() {
             const container = document.getElementById('location-list');
             container.innerHTML = '';
             LOCATIONS.forEach(loc => {
                 const div = document.createElement('div');
-                div.className = 'loc-item ' + (loc.id === window.currentLocation ? 'active' : '');
+                div.className = 'loc-item';
+                div.style.background = loc.id === window.currentLocation ? '#4ca1af' : '#2c2c2e';
                 div.onclick = () => updateLocation(loc.id);
                 div.innerHTML = `<span>${loc.name[window.currentLang]}</span> <span>📍</span>`;
                 container.appendChild(div);
             });
         }
 
-        function renderCropTips() {
-            const container = document.getElementById('crop-tips-container');
-            container.innerHTML = '';
-            FARMER_ADVISORIES.cropTips.forEach(tip => {
-                const cropName = t('crops.' + tip.crop) || tip.crop;
-                const tipText = tip.tip[window.currentLang];
-                container.innerHTML += `
-                    <div class="loc-item" style="flex-direction: column; align-items: flex-start; cursor: default;">
-                        <strong style="color: var(--monsoon-teal); margin-bottom: 4px;">${cropName}</strong>
-                        <span style="font-size: 0.9rem;">${tipText}</span>
-                    </div>
-                `;
-            });
-            
-            // Also update static farmer advisory text
-            const spray = FARMER_ADVISORIES.sprayAdvisory;
-            document.getElementById('spray-reason').textContent = spray.reason[window.currentLang];
-            document.getElementById('spray-window').textContent = spray.nextWindow[window.currentLang];
-            
-            const irr = FARMER_ADVISORIES.irrigationAdvice;
-            document.getElementById('irrigation-reason').textContent = irr.reason[window.currentLang];
-            
-            // Update statuses and icons for spray and irrigation
-            const sprayStatus = document.getElementById('spray-status');
-            const sprayIcon = document.getElementById('spray-icon');
-            if (sprayStatus && sprayIcon) {
-                if (spray.suitable) {
-                    sprayStatus.textContent = window.currentLang === 'te' ? 'అనుకూలం' : 'Suitable';
-                    sprayStatus.style.color = 'var(--monsoon-teal)';
-                    sprayIcon.textContent = '✅';
-                } else {
-                    sprayStatus.textContent = window.currentLang === 'te' ? 'అనుకూలం కాదు' : 'Not Suitable';
-                    sprayStatus.style.color = 'var(--alert-red)';
-                    sprayIcon.textContent = '❌';
-                }
-            }
-            
-            const irrStatus = document.getElementById('irrigation-status');
-            const irrIcon = document.getElementById('irrigation-icon');
-            const irrRain = document.getElementById('irrigation-rain');
-            if (irrStatus && irrIcon) {
-                if (irr.needed) {
-                    irrStatus.textContent = window.currentLang === 'te' ? 'అవసరం' : 'Needed';
-                    irrStatus.style.color = 'var(--alert-red)';
-                    irrIcon.textContent = '💧';
-                } else {
-                    irrStatus.textContent = window.currentLang === 'te' ? 'అవసరం లేదు' : 'Not Needed';
-                    irrStatus.style.color = 'var(--monsoon-teal)';
-                    irrIcon.textContent = '✅';
-                }
-                if (irrRain) {
-                    irrRain.textContent = irr.rainfallLast7Days + ' mm';
-                }
-            }
-        }
-
-        function renderAlerts() {
-            const container = document.getElementById('alerts-container');
-            container.innerHTML = '';
-            
-            if (MOCK_ALERTS.length === 0) {
-                container.innerHTML = `<p>${t('alerts.noAlerts')}</p>`;
-                return;
-            }
-            MOCK_ALERTS.forEach(alert => {
-                const severityClass = `severity-${alert.severity}`;
-                const actionsText = alert.actions[window.currentLang].map(a => `<li>${a}</li>`).join('');
-                
-                container.innerHTML += `
-                    <div class="alert-item ${severityClass}">
-                        <h3 style="margin-bottom: 8px;">${alert.title[window.currentLang]}</h3>
-                        <p style="margin-bottom: 12px; font-size: 0.95rem;">${alert.description[window.currentLang]}</p>
-                        <div class="text-small" style="background: var(--glass-white); padding: 8px; border-radius: 6px;">
-                            <strong>Areas:</strong> ${alert.affectedAreas.join(', ')}<br>
-                            <ul style="margin-top: 6px; padding-left: 16px; color: var(--text-secondary);">${actionsText}</ul>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            // Show top banner if emergency or warning
-            const topAlert = MOCK_ALERTS.find(a => a.severity === 'emergency' || a.severity === 'warning');
-            if (topAlert) {
-                const banner = document.getElementById('alert-banner');
-                banner.className = `alert-banner alert-banner--${topAlert.severity}`;
-                document.getElementById('alert-banner-text').textContent = topAlert.title[window.currentLang];
-            } else {
-                document.getElementById('alert-banner').classList.add('hidden');
-            }
-        }
-        
-        function renderInstagram() {
-            const container = document.getElementById('insta-feed');
-            container.innerHTML = '';
-            // Show only first 4 posts
-            INSTAGRAM_MOCK.latestPosts.slice(0, 4).forEach(post => {
-                container.innerHTML += `
-                    <div class="insta-post" onclick="window.open('https://instagram.com/srikakulam_weatherman', '_blank')">
-                        <img src="${post.img}" alt="Instagram Post">
-                        <div class="insta-overlay">
-                            <p style="font-size: 0.85rem; margin-bottom: 8px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">${post.caption[window.currentLang]}</p>
-                            <div style="display: flex; gap: 12px; font-size: 0.8rem; color: var(--monsoon-teal);">
-                                <span>❤️ ${post.likes}</span>
-                                <span>💬 ${post.comments}</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        // Navigation Routing
-        function initNavigation() {
-            const links = document.querySelectorAll('.nav-link, .mobile-link');
-            const sections = document.querySelectorAll('.page-section');
-            
-            function navigateTo(targetId) {
-                // Update active link
-                links.forEach(l => {
-                    if (l.getAttribute('data-target') === targetId) {
-                        l.classList.add('active');
-                    } else {
-                        l.classList.remove('active');
-                    }
-                });
-                
-                // Show active section
-                sections.forEach(s => {
-                    if (s.id === targetId) {
-                        s.classList.add('active');
-                        // Add slight fade in
-                        gsap.fromTo(s, {opacity: 0, y: 10}, {opacity: 1, y: 0, duration: 0.4});
-                    } else {
-                        s.classList.remove('active');
-                    }
-                });
-                
-                // Close mobile menu
-                document.getElementById('mobile-menu').classList.remove('open');
-                document.getElementById('mobile-menu-btn').classList.remove('open');
-                
-                // Trigger map resize if live section is opened (Leaflet bug fix)
-                if (targetId === 'live-section' && typeof initWeatherMap === 'function') {
-                    // Slight delay to allow DOM to render
-                    setTimeout(() => {
-                        window.dispatchEvent(new Event('resize'));
-                    }, 100);
-                }
-            }
-            
-            links.forEach(link => {
-                link.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    navigateTo(link.getAttribute('data-target'));
-                });
-            });
-        }
-
-        // Initialize Application
+        // Initialize App
         document.addEventListener('DOMContentLoaded', () => {
-            // Setup Language Toggle
             document.getElementById('lang-toggle').addEventListener('click', () => {
                 window.currentLang = window.currentLang === 'en' ? 'te' : 'en';
                 applyTranslations();
             });
             
-            // Setup Mobile Menu
-            document.getElementById('mobile-menu-btn').addEventListener('click', function() {
-                this.classList.toggle('open');
-                document.getElementById('mobile-menu').classList.toggle('open');
-            });
-            
-            // Initial Renders
-            initNavigation();
             renderLocations();
             applyTranslations();
             updateLocation('srikakulam');
-
-            // Live conditions refresh every 10 minutes
+            
             setInterval(() => {
                 updateLocation(window.currentLocation);
             }, 10 * 60 * 1000);
             
-            // Wait slightly for fonts and DOM, then init heavy visuals
+            // Init heavy visuals (Three.js and Leaflet)
             setTimeout(() => {
-                if (typeof initAllVisuals === 'function') {
-                    initAllVisuals();
-                }
+                if (typeof initAllVisuals === 'function') initAllVisuals();
+                // Fix map resize bug inside card
+                setTimeout(() => window.dispatchEvent(new Event('resize')), 1000);
             }, 300);
-            
-            // Listen for map location selections
-            window.addEventListener('locationChange', (e) => {
-                if(e.detail && e.detail.id) {
-                    updateLocation(e.detail.id);
-                }
-            });
-            
-            // Navbar scroll effect
-            window.addEventListener('scroll', () => {
-                if (window.scrollY > 20) {
-                    document.querySelector('.navbar').classList.add('scrolled');
-                } else {
-                    document.querySelector('.navbar').classList.remove('scrolled');
-                }
-            });
         });
     </script>
 </body>
