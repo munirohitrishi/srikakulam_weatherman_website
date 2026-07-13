@@ -271,21 +271,36 @@ function initWeatherScene() {
 
 function _createGlobe() {
   var geo = new THREE.SphereGeometry(5, 64, 64);
-  var mat = new THREE.ShaderMaterial({
-    vertexShader:   _globeVertexShader,
-    fragmentShader: _globeFragmentShader,
-    uniforms: {
-      uTime:     { value: 0 },
-      uBaseColor:{ value: new THREE.Color(0x0A2540) },
-      uRimColor: { value: new THREE.Color(0x00D4AA) },
-      uRimPower: { value: 2.5 }
-    },
-    transparent: true,
-    side: THREE.FrontSide,
-    depthWrite: true
+  
+  var loader = new THREE.TextureLoader();
+  
+  var earthMat = new THREE.MeshStandardMaterial({
+    map: loader.load('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg'),
+    bumpMap: loader.load('https://unpkg.com/three-globe/example/img/earth-topology.png'),
+    bumpScale: 0.1,
+    roughnessMap: loader.load('https://unpkg.com/three-globe/example/img/earth-water.png'),
+    metalness: 0.1,
+    roughness: 0.8
   });
-  _scene.globe = new THREE.Mesh(geo, mat);
+  
+  _scene.globe = new THREE.Mesh(geo, earthMat);
   _scene.globeGroup.add(_scene.globe);
+
+  // Cloud layer
+  var cloudGeo = new THREE.SphereGeometry(5.05, 64, 64);
+  var cloudMat = new THREE.MeshStandardMaterial({
+    map: loader.load('https://unpkg.com/three-globe/example/img/earth-clouds1024.png'),
+    transparent: true,
+    opacity: 0.6,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+  });
+  
+  var clouds = new THREE.Mesh(cloudGeo, cloudMat);
+  _scene.globe.add(clouds); // Attaching to globe so they rotate together
+  
+  // Slowly rotate clouds independently inside animation loop
+  _scene.clouds = clouds;
 }
 
 
@@ -636,9 +651,8 @@ function animateScene() {
     _scene.globeGroup.rotation.y += 0.001;
   }
 
-  /* ── globe shader time uniform ── */
-  if (_scene.globe && _scene.globe.material.uniforms) {
-    _scene.globe.material.uniforms.uTime.value = elapsed;
+  if (_scene.clouds) {
+    _scene.clouds.rotation.y += 0.0005; // Clouds rotate slightly faster than earth
   }
 
   /* ── marker pulse ── */
@@ -907,7 +921,7 @@ function initWeatherCharts() {
 /* ── temperature line chart ── */
 
 function _initTempChart() {
-  var canvas = document.getElementById('temp-chart');
+  var canvas = document.getElementById(''); if (!canvas) return;
   if (!canvas) return;
   var ctx = canvas.getContext('2d');
 
@@ -951,7 +965,7 @@ function _initTempChart() {
 /* ── rainfall bar chart ── */
 
 function _initRainChart() {
-  var canvas = document.getElementById('rain-chart');
+  var canvas = document.getElementById(''); if (!canvas) return;
   if (!canvas) return;
   var ctx = canvas.getContext('2d');
 
@@ -997,7 +1011,7 @@ function _initRainChart() {
 /* ── humidity area chart ── */
 
 function _initHumidityChart() {
-  var canvas = document.getElementById('humidity-chart');
+  var canvas = document.getElementById(''); if (!canvas) return;
   if (!canvas) return;
   var ctx = canvas.getContext('2d');
 
