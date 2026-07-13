@@ -315,8 +315,7 @@
     <!-- App Parts -->
     <script src="parts/data.js"></script>
     <script src="parts/scene.js"></script>
-    <script src="parts/weather.js"></script>
-    
+    <script src="parts/api.js"></script>
     <!-- Main App Logic -->
     <script>
         // Global State
@@ -408,53 +407,38 @@
             renderLocations(); // Update active state
         }
 
-        function updateLocation(locId) {
-            const fallback = MOCK_WEATHER_BY_LOCATION[locId] || MOCK_WEATHER;
-            updateWeatherInterface(locId, window.WeatherClient && WeatherClient.current(locId) || fallback);
+        async function updateLocation(locId) {
+            window.currentLocation = locId;
             const location = LOCATIONS.find(l => l.id === locId);
-            if (window.WeatherClient && location) {
-                WeatherClient.loadLocation(location).catch(() => {
-                    const status = document.getElementById('data-status');
-                    status.textContent = 'Live data unavailable — showing demo data.';
-                });
+            
+            // Show loading state
+            const statusEl = document.getElementById('data-status');
+            if (statusEl) statusEl.textContent = 'Fetching live data...';
+            
+            // Fetch live data
+            const liveWeather = await fetchWeatherData(location.lat, location.lon, location.name.en);
+            
+            if (liveWeather) {
+                // Update global mock for charts to read from
+                MOCK_WEATHER_BY_LOCATION[locId] = liveWeather;
+                
+                updateWeatherInterface(locId, liveWeather);
+                
+                const adv = generateFarmerAdvisories(liveWeather);
+                FARMER_ADVISORIES.sprayAdvisory = adv.sprayAdvisory;
+                FARMER_ADVISORIES.irrigationAdvice = adv.irrigationAdvice;
+                
+                renderCropTips(); // Updates the DOM using the new FARMER_ADVISORIES
+                
+                document.getElementById('last-updated').textContent = t('ui.lastUpdated') + ': ' + t('time.now');
+                if (statusEl) statusEl.textContent = 'Live data connected (OpenWeatherMap & Tomorrow.io)';
+            } else {
+                // Fallback
+                const fallback = MOCK_WEATHER_BY_LOCATION[locId] || MOCK_WEATHER;
+                updateWeatherInterface(locId, fallback);
+                if (statusEl) statusEl.textContent = 'Live data unavailable — showing demo data.';
             }
         }
-
-        function renderLiveAdvisory(weather) {
-            if (!weather.advisory || !window.WeatherClient) return;
-            const labels = WeatherClient.advisoryText(weather, window.currentLang);
-            const entries = [
-                ['spray', 'spraying', weather.advisory.spraying], ['irrigation', 'irrigation', weather.advisory.irrigation],
-                ['harvest', 'harvest', weather.advisory.harvest], ['disease', 'disease', weather.advisory.diseaseRisk], ['fishing', 'fishing', weather.advisory.fishing]
-            ];
-            entries.forEach(([id, key, level]) => {
-                const text = labels[key];
-                const status = document.getElementById(`${id}-status`);
-                const reason = document.getElementById(`${id}-reason`);
-                const icon = document.getElementById(`${id}-icon`);
-                if (status) { status.textContent = text[0]; status.style.color = /❌|🔴|🚫/.test(text[0]) ? 'var(--alert-red)' : /⚠️|🟠/.test(text[0]) ? 'var(--warning-orange)' : 'var(--monsoon-teal)'; }
-                if (reason) reason.textContent = text[1];
-                if (icon) icon.textContent = text[0].split(' ')[0];
-            });
-            const sprayWindow = document.getElementById('spray-window');
-            if (sprayWindow) sprayWindow.textContent = weather.advisory.spraying === 'good' ? (window.currentLang === 'te' ? 'ఇప్పుడు' : 'Now') : (window.currentLang === 'te' ? 'మరుసటి పొడి సమయం' : 'Next dry window');
-            const rain = document.getElementById('irrigation-rain');
-            if (rain) rain.textContent = `${Math.round(weather.forecastRain3Days)} mm`;
-        }
-
-        window.addEventListener('weatherLoaded', (event) => {
-            const { id, weather, fromCache } = event.detail;
-            MOCK_WEATHER_BY_LOCATION[id] = weather;
-            if (id !== window.currentLocation) return;
-            updateWeatherInterface(id, weather);
-            renderLiveAdvisory(weather);
-            if (typeof setRainRadar === 'function' && weather.radar) setRainRadar(weather.radar);
-            if (typeof refreshMapMarkers === 'function') refreshMapMarkers();
-            const minutes = Math.max(0, Math.round((Date.now() - weather.updatedAt) / 60000));
-            document.getElementById('last-updated').textContent = window.currentLang === 'te' ? `చివరిగా నవీకరించబడింది: ${minutes ? minutes + ' నిమిషాల క్రితం' : 'ఇప్పుడే'}` : `Last updated: ${minutes ? minutes + ' min ago' : 'Just now'}`;
-            document.getElementById('data-status').textContent = fromCache ? 'Showing saved weather while refreshing.' : 'Live data: Open-Meteo' + (weather.alerts.length ? ' • Weather alert received' : '');
-            renderAlerts();
-        });
 
         // Render dynamic lists
         function renderLocations() {
@@ -490,8 +474,39 @@
             
             const irr = FARMER_ADVISORIES.irrigationAdvice;
             document.getElementById('irrigation-reason').textContent = irr.reason[window.currentLang];
-            const live = window.WeatherClient && WeatherClient.current(window.currentLocation);
-            if (live) renderLiveAdvisory(live);
+            
+            // Update statuses and icons for spray and irrigation
+            const sprayStatus = document.getElementById('spray-status');
+            const sprayIcon = document.getElementById('spray-icon');
+            if (sprayStatus && sprayIcon) {
+                if (spray.suitable) {
+                    sprayStatus.textContent = window.currentLang === 'te' ? 'అనుకూలం' : 'Suitable';
+                    sprayStatus.style.color = 'var(--monsoon-teal)';
+                    sprayIcon.textContent = '✅';
+                } else {
+                    sprayStatus.textContent = window.currentLang === 'te' ? 'అనుకూలం కాదు' : 'Not Suitable';
+                    sprayStatus.style.color = 'var(--alert-red)';
+                    sprayIcon.textContent = '❌';
+                }
+            }
+            
+            const irrStatus = document.getElementById('irrigation-status');
+            const irrIcon = document.getElementById('irrigation-icon');
+            const irrRain = document.getElementById('irrigation-rain');
+            if (irrStatus && irrIcon) {
+                if (irr.needed) {
+                    irrStatus.textContent = window.currentLang === 'te' ? 'అవసరం' : 'Needed';
+                    irrStatus.style.color = 'var(--alert-red)';
+                    irrIcon.textContent = '💧';
+                } else {
+                    irrStatus.textContent = window.currentLang === 'te' ? 'అవసరం లేదు' : 'Not Needed';
+                    irrStatus.style.color = 'var(--monsoon-teal)';
+                    irrIcon.textContent = '✅';
+                }
+                if (irrRain) {
+                    irrRain.textContent = irr.rainfallLast7Days + ' mm';
+                }
+            }
         }
 
         function renderAlerts() {
@@ -502,21 +517,6 @@
                 container.innerHTML = `<p>${t('alerts.noAlerts')}</p>`;
                 return;
             }
-
-            const liveWeather = window.WeatherClient && WeatherClient.current(window.currentLocation);
-            const providerAlerts = liveWeather && liveWeather.alerts || [];
-            providerAlerts.forEach(alert => {
-                container.innerHTML += `
-                    <div class="alert-item severity-${alert.severity || 'warning'}">
-                        <h3 style="margin-bottom: 8px;">${alert.title}</h3>
-                        <p style="font-size: 0.95rem;">${alert.description}</p>
-                    </div>`;
-            });
-            if (liveWeather && !liveWeather.isDemo) {
-                if (!providerAlerts.length) container.innerHTML = `<p>${t('alerts.noAlerts')}</p>`;
-                return;
-            }
-            
             MOCK_ALERTS.forEach(alert => {
                 const severityClass = `severity-${alert.severity}`;
                 const actionsText = alert.actions[window.currentLang].map(a => `<li>${a}</li>`).join('');
@@ -631,10 +631,9 @@
             applyTranslations();
             updateLocation('srikakulam');
 
-            // Live conditions refresh every 10 minutes; forecasts are supplied by the same response.
+            // Live conditions refresh every 10 minutes
             setInterval(() => {
-                const location = LOCATIONS.find(l => l.id === window.currentLocation);
-                if (location && window.WeatherClient) WeatherClient.loadLocation(location).catch(() => {});
+                updateLocation(window.currentLocation);
             }, 10 * 60 * 1000);
             
             // Wait slightly for fonts and DOM, then init heavy visuals
