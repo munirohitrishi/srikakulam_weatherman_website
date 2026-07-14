@@ -322,16 +322,41 @@ const TRANSLATIONS = {
 };
 
 const LOCATIONS = [
-  { id: 'srikakulam', name: { en: 'Srikakulam', te: 'శ్రీకాకుళం' }, lat: 18.2949, lon: 83.8935, isDefault: true },
-  { id: 'amadalavalasa', name: { en: 'Amadalavalasa', te: 'అమదాలవలస' }, lat: 18.41, lon: 83.90 },
-  { id: 'tekkali', name: { en: 'Tekkali', te: 'టెక్కలి' }, lat: 18.605, lon: 84.235 },
-  { id: 'palasa', name: { en: 'Palasa', te: 'పలాస' }, lat: 18.773, lon: 84.416 },
-  { id: 'narasannapeta', name: { en: 'Narasannapeta', te: 'నరసన్నపేట' }, lat: 18.414, lon: 84.044 },
-  { id: 'ichapuram', name: { en: 'Ichapuram', te: 'ఇచ్ఛాపురం' }, lat: 19.114, lon: 84.692 },
-  { id: 'sompeta', name: { en: 'Sompeta', te: 'సోంపేట' }, lat: 18.945, lon: 84.585 },
-  { id: 'kaviti', name: { en: 'Kaviti', te: 'కవిటి' }, lat: 19.007, lon: 84.685 },
-  { id: 'rajam', name: { en: 'Rajam', te: 'రాజాం' }, lat: 18.455, lon: 83.945 },
-  { id: 'etcherla', name: { en: 'Etcherla', te: 'ఏచ్చెర్ల' }, lat: 18.36, lon: 83.94 }
+  { id: 'srikakulam', name: { en: 'Srikakulam', te: 'Srikakulam' }, division: 'Srikakulam Division', lat: 18.2949307, lon: 83.8938844 },
+  { id: 'amadalavalasa', name: { en: 'Amadalavalasa', te: 'Amadalavalasa' }, division: 'Srikakulam Division', lat: 18.4111443, lon: 83.8993345 },
+  { id: 'burja', name: { en: 'Burja', te: 'Burja' }, division: 'Srikakulam Division', lat: 18.5218175, lon: 83.8362941 },
+  { id: 'etcherla', name: { en: 'Etcherla', te: 'Etcherla' }, division: 'Srikakulam Division', lat: 18.2434441, lon: 83.864398 },
+  { id: 'ganguvarisigadam', name: { en: 'Ganguvarisigadam', te: 'Ganguvarisigadam' }, division: 'Srikakulam Division', lat: 18.3768758, lon: 83.6864617 },
+  { id: 'gara', name: { en: 'Gara', te: 'Gara' }, division: 'Srikakulam Division', lat: 18.2918301, lon: 84.0204618 },
+  { id: 'jalumuru', name: { en: 'Jalumuru', te: 'Jalumuru' }, division: 'Srikakulam Division', lat: 18.5341112, lon: 84.037989 },
+  { id: 'laveru', name: { en: 'Laveru', te: 'Laveru' }, division: 'Srikakulam Division', lat: 18.2383326, lon: 83.6939416 },
+  { id: 'narasannapeta', name: { en: 'Narasannapeta', te: 'Narasannapeta' }, division: 'Srikakulam Division', lat: 18.4150974, lon: 84.0446974 },
+  { id: 'polaki', name: { en: 'Polaki', te: 'Polaki' }, division: 'Srikakulam Division', lat: 18.4032673, lon: 84.1165092 },
+  { id: 'ponduru', name: { en: 'Ponduru', te: 'Ponduru' }, division: 'Srikakulam Division', lat: 18.362788, lon: 83.7767868 },
+  { id: 'ranastalam', name: { en: 'Ranastalam', te: 'Ranastalam' }, division: 'Srikakulam Division', lat: 18.1524429, lon: 83.6993384 },
+  { id: 'sarubujjili', name: { en: 'Sarubujjili', te: 'Sarubujjili' }, division: 'Srikakulam Division', lat: 18.5006764, lon: 83.906999 },
+  { id: 'hiramandalam', name: { en: 'Hiramandalam', te: 'Hiramandalam' }, division: 'Tekkali Division', lat: 18.6782742, lon: 83.9454797 },
+  { id: 'ichchapuram', name: { en: 'Ichchapuram', te: 'Ichchapuram' }, division: 'Tekkali Division', lat: 19.1127045, lon: 84.6887188 },
+  { id: 'kanchili', name: { en: 'Kanchili', te: 'Kanchili' }, division: 'Tekkali Division', lat: 18.9988544, lon: 84.557699 },
+  { id: 'kaviti', name: { en: 'Kaviti', te: 'Kaviti' }, division: 'Tekkali Division', lat: 19.0009948, lon: 84.6697661 },
+  { id: 'kotabommali', name: { en: 'Kotabommali', te: 'Kotabommali' }, division: 'Tekkali Division', lat: 18.4880666, lon: 84.1995843 },
+  { id: 'kothuru', name: { en: 'Kothuru', te: 'Kothuru' }, division: 'Tekkali Division', lat: 18.743193, lon: 83.9290273 },
+  { id: 'lakshminarasupeta', name: { en: 'Lakshminarasupeta', te: 'Lakshminarasupeta' }, division: 'Tekkali Division', lat: 18.6218836, lon: 83.9393128 },
+  { id: 'mandasa', name: { en: 'Mandasa', te: 'Mandasa' }, division: 'Tekkali Division', lat: 18.8689665, lon: 84.4632615 },
+  { id: 'meliaputti', name: { en: 'Meliaputti', te: 'Meliaputti' }, division: 'Tekkali Division', lat: 18.7396497, lon: 84.1886226 },
+  { id: 'nandigama', name: { en: 'Nandigama', te: 'Nandigama' }, division: 'Tekkali Division', lat: 18.5, lon: 84.0 },
+  { id: 'palasa', name: { en: 'Palasa', te: 'Palasa' }, division: 'Tekkali Division', lat: 18.7719133, lon: 84.4096945 },
+  { id: 'pathapatnam', name: { en: 'Pathapatnam', te: 'Pathapatnam' }, division: 'Tekkali Division', lat: 18.7487284, lon: 84.0888676 },
+  { id: 'santhabommali', name: { en: 'Santha Bommali', te: 'Santha Bommali' }, division: 'Tekkali Division', lat: 18.5544841, lon: 84.2097577 },
+  { id: 'saravakota', name: { en: 'Saravakota', te: 'Saravakota' }, division: 'Tekkali Division', lat: 18.6200716, lon: 84.0717087 },
+  { id: 'sompeta', name: { en: 'Sompeta', te: 'Sompeta' }, division: 'Tekkali Division', lat: 18.9424871, lon: 84.5839641 },
+  { id: 'vajrapukotturu', name: { en: 'Vajrapukotturu', te: 'Vajrapukotturu' }, division: 'Tekkali Division', lat: 18.6938645, lon: 84.4416143 },
+  { id: 'bhamini', name: { en: 'Bhamini', te: 'Bhamini' }, division: 'Palakonda Division', lat: 18.5, lon: 84.0 },
+  { id: 'burja', name: { en: 'Burja', te: 'Burja' }, division: 'Palakonda Division', lat: 18.5218175, lon: 83.8362941 },
+  { id: 'kotturu', name: { en: 'Kotturu', te: 'Kotturu' }, division: 'Palakonda Division', lat: 18.313121, lon: 83.7122393 },
+  { id: 'palakonda', name: { en: 'Palakonda', te: 'Palakonda' }, division: 'Palakonda Division', lat: 18.363457, lon: 83.5997047 },
+  { id: 'seethampeta', name: { en: 'Seethampeta', te: 'Seethampeta' }, division: 'Palakonda Division', lat: 18.695397, lon: 83.816622 },
+  { id: 'veeraghattam', name: { en: 'Veeraghattam', te: 'Veeraghattam' }, division: 'Palakonda Division', lat: 18.6879786, lon: 83.6081654 },
 ];
 
 const _baseTime = Date.now() / 1000;
@@ -441,30 +466,7 @@ const FARMER_ADVISORIES = {
   ]
 };
 
-const MOCK_ALERTS = [
-  {
-    id: 1,
-    type: 'heavy_rain',
-    severity: 'warning',
-    title: { en: 'Heavy Rainfall Warning', te: 'భారీ వర్షపాతం హెచ్చరిక' },
-    description: { en: 'Heavy to very heavy rainfall expected in Srikakulam district over the next 24 hours.', te: 'రాబోయే 24 గంటల్లో శ్రీకాకుళం జిల్లాలో భారీ నుండి అతి భారీ వర్షాలు కురిసే అవకాశం ఉంది.' },
-    issued: '2026-07-12T09:00:00+05:30',
-    expires: '2026-07-13T09:00:00+05:30',
-    affectedAreas: ['Srikakulam', 'Tekkali', 'Narasannapeta'],
-    actions: { en: ['Stay indoors', 'Avoid crossing streams', 'Secure loose objects'], te: ['ఇంట్లోనే ఉండండి', 'వాగులు దాటకండి', 'వదులుగా ఉన్న వస్తువులను భద్రపరచండి'] }
-  },
-  {
-    id: 2,
-    type: 'cyclone',
-    severity: 'watch',
-    title: { en: 'Cyclone Watch', te: 'తుఫాను నిఘా (Watch)' },
-    description: { en: 'A low-pressure area over Bay of Bengal is likely to intensify. Fishermen are advised not to venture into the sea.', te: 'బంగాళాఖాతంలో అల్పపీడనం బలపడే అవకాశం ఉంది. మత్స్యకారులు సముద్రంలోకి వేటకు వెళ్లవద్దని సూచించబడింది.' },
-    issued: '2026-07-12T08:00:00+05:30',
-    expires: '2026-07-15T18:00:00+05:30',
-    affectedAreas: ['Kaviti', 'Sompeta', 'Ichapuram', 'Coastal Mandals'],
-    actions: { en: ['Fishermen warning', 'Keep emergency kits ready'], te: ['మత్స్యకారులకు హెచ్చరిక', 'అత్యవసర కిట్లను సిద్ధంగా ఉంచుకోండి'] }
-  }
-];
+const MOCK_ALERTS = [];
 
 const RESOURCES = {
   helplines: [

@@ -250,9 +250,9 @@ function initWeatherScene() {
   _scene.scene.add(_scene.globeGroup);
 
   /* build sub-elements */
-  _createGlobe();
-  _createAtmosphere();
-  _createSrikakulamMarker();
+  // Removed Globe
+  // Removed Atmosphere
+  // Removed Srikakulam Marker
   _createLights();
   _createParticles('rain');
 
@@ -647,13 +647,9 @@ function animateScene() {
   var elapsed = _scene.clock ? _scene.clock.getElapsedTime() : 0;
 
   /* ── globe auto-rotation ── */
-  if (_scene.globeGroup && !_scene.mouse.dragging) {
-    _scene.globeGroup.rotation.y += 0.001;
-  }
+  
 
-  if (_scene.clouds) {
-    _scene.clouds.rotation.y += 0.0005; // Clouds rotate slightly faster than earth
-  }
+  
 
   /* ── marker pulse ── */
   if (_scene.markerGlow) {
@@ -1234,6 +1230,34 @@ function initWeatherMap() {
   L.control.attribution({ prefix: false, position: 'bottomright' })
     .addAttribution('&copy; <a href="https://carto.com/">CARTO</a>')
     .addTo(_map.instance);
+
+  
+  /* ── Map Layers (Windy Style) ── */
+  var owmApiKey = typeof KEYS !== 'undefined' ? KEYS.openweather : 'bb5b555de635560c235a7321f88c07ce';
+  
+  var tempLayer = L.tileLayer('https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=' + owmApiKey, {
+    maxZoom: 18, opacity: 0.7, attribution: 'OpenWeatherMap'
+  });
+  
+  var rainLayer = L.tileLayer('https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=' + owmApiKey, {
+    maxZoom: 18, opacity: 0.7, attribution: 'OpenWeatherMap'
+  });
+  
+  var windLayer = L.tileLayer('https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=' + owmApiKey, {
+    maxZoom: 18, opacity: 0.7, attribution: 'OpenWeatherMap'
+  });
+  
+  var baseMaps = {
+    "Dark Base": _map.tileLayer
+  };
+  
+  var overlayMaps = {
+    "🌡️ Temperature": tempLayer,
+    "🌧️ Rain Accumulation": rainLayer,
+    "🌪️ Wind & Hurricane": windLayer
+  };
+  
+  L.control.layers(baseMaps, overlayMaps, {position: 'topright'}).addTo(_map.instance);
 
   /* ── place markers ── */
   _placeMarkers();
