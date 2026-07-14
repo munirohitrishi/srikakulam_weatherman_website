@@ -372,14 +372,37 @@
         function renderLocations() {
             const container = document.getElementById('location-list');
             container.innerHTML = '';
+            
+            // Group locations by division
+            const divisions = {};
             LOCATIONS.forEach(loc => {
-                const div = document.createElement('div');
-                div.className = 'loc-item';
-                div.style.background = loc.id === window.currentLocation ? '#4ca1af' : '#2c2c2e';
-                div.onclick = () => updateLocation(loc.id);
-                div.innerHTML = `<span>${loc.name[window.currentLang]}</span> <span>📍</span>`;
-                container.appendChild(div);
+                const divName = loc.division || 'Other';
+                if (!divisions[divName]) divisions[divName] = [];
+                divisions[divName].push(loc);
             });
+            
+            for (const [divName, locs] of Object.entries(divisions)) {
+                // Add Division Header
+                const header = document.createElement('div');
+                header.style.padding = '10px 15px';
+                header.style.marginTop = '10px';
+                header.style.color = 'var(--text-secondary)';
+                header.style.fontWeight = 'bold';
+                header.style.fontSize = '0.9rem';
+                header.style.textTransform = 'uppercase';
+                header.textContent = divName;
+                container.appendChild(header);
+                
+                // Add Locations
+                locs.forEach(loc => {
+                    const div = document.createElement('div');
+                    div.className = 'loc-item';
+                    div.style.background = loc.id === window.currentLocation ? '#4ca1af' : '#2c2c2e';
+                    div.onclick = () => updateLocation(loc.id);
+                    div.innerHTML = `<span>${loc.name[window.currentLang]}</span> <span>📍</span>`;
+                    container.appendChild(div);
+                });
+            }
         }
 
         // Initialize App
