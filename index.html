@@ -1,432 +1,852 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Srikakulam Weatherman</title>
-    
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;400;500;600&family=Noto+Sans+Telugu:wght@400;500;600&display=swap" rel="stylesheet">
-    
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-    
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="parts/styles.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Srikakulam Weatherman — Live AP Weather Hub</title>
+<meta name="description" content="Live weather for all 26 districts of Andhra Pradesh. Farmers advisory (Rytu Vani), fishermen safety (Matsyakara Vani), radar & alerts. By @srikakulam_weatherman">
+<meta name="theme-color" content="#0A1931">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛈️</text></svg>">
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=Noto+Sans+Telugu:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --navy:#0A1931; --bay:#185ADB; --cyan:#00C9FF; --yellow:#FFC300;
+  --bg:#060e21; --bg2:#0A1931; --card:rgba(255,255,255,.06); --card-brd:rgba(255,255,255,.12);
+  --txt:#f2f6ff; --txt2:#9fb3d1; --glass-blur:18px;
+  --safe:#22c55e; --danger:#ef4444;
+  --shadow:0 8px 32px rgba(0,0,0,.35);
+}
+[data-theme="light"]{
+  --bg:#e8f0fb; --bg2:#dbe7f7; --card:rgba(255,255,255,.65); --card-brd:rgba(10,25,49,.08);
+  --txt:#0A1931; --txt2:#44557a; --shadow:0 8px 32px rgba(24,90,219,.12);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Inter','Noto Sans Telugu',sans-serif; background:var(--bg); color:var(--txt);
+  background-image:radial-gradient(ellipse at 20% -10%, rgba(24,90,219,.25), transparent 55%),
+                   radial-gradient(ellipse at 90% 10%, rgba(0,201,255,.12), transparent 50%);
+  background-attachment:fixed; overflow-x:hidden; transition:background .4s,color .4s;
+}
+h1,h2,h3,h4{font-family:'Poppins','Noto Sans Telugu',sans-serif}
+body:not(.te) .te{display:none!important}
+body.te .en{display:none!important}
+body.te{font-family:'Noto Sans Telugu','Inter',sans-serif}
+.wrap{max-width:1200px;margin:0 auto;padding:0 20px}
+.glass{
+  background:var(--card); border:1px solid var(--card-brd); border-radius:20px;
+  backdrop-filter:blur(var(--glass-blur)); -webkit-backdrop-filter:blur(var(--glass-blur));
+  box-shadow:var(--shadow);
+}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;font-size:.75rem;font-weight:600;background:rgba(0,201,255,.12);color:var(--cyan);border:1px solid rgba(0,201,255,.25)}
+section{padding:70px 0;position:relative}
+.sec-title{font-size:clamp(1.5rem,3.5vw,2.2rem);font-weight:700;margin-bottom:8px}
+.sec-sub{color:var(--txt2);margin-bottom:30px;font-size:.95rem}
+.grad-txt{background:linear-gradient(90deg,var(--cyan),var(--bay));-webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* ---------- Header ---------- */
+header{position:fixed;top:0;left:0;right:0;z-index:100;transition:.3s}
+header .bar{display:flex;align-items:center;gap:14px;margin:12px auto;max-width:1200px;padding:10px 18px;border-radius:16px}
+.logo{display:flex;align-items:center;gap:10px;font-family:'Poppins',sans-serif;font-weight:700;font-size:1rem;line-height:1.1;text-decoration:none;color:var(--txt)}
+.logo .ic{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--bay),var(--cyan));display:grid;place-items:center;font-size:1.3rem;flex:none;box-shadow:0 4px 14px rgba(0,201,255,.4)}
+.logo small{display:block;font-size:.62rem;font-weight:500;color:var(--txt2)}
+nav{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap}
+nav a{color:var(--txt2);text-decoration:none;font-size:.8rem;font-weight:600;padding:7px 11px;border-radius:10px;transition:.2s}
+nav a:hover{color:var(--cyan);background:rgba(0,201,255,.08)}
+.hbtns{display:flex;gap:8px;margin-left:8px}
+.tgl{cursor:pointer;border:1px solid var(--card-brd);background:var(--card);color:var(--txt);border-radius:10px;padding:7px 12px;font-size:.78rem;font-weight:700;font-family:inherit;transition:.2s}
+.tgl:hover{border-color:var(--cyan);color:var(--cyan)}
+#clock{font-variant-numeric:tabular-nums;font-weight:600;font-size:.8rem;color:var(--cyan);white-space:nowrap}
+@media(max-width:900px){nav{display:none}}
+
+/* ---------- Ticker ---------- */
+.ticker{position:relative;z-index:5;overflow:hidden;border-top:1px solid var(--card-brd);border-bottom:1px solid var(--card-brd);background:rgba(255,195,0,.07)}
+.ticker-in{display:flex;gap:60px;white-space:nowrap;padding:9px 0;animation:tick 40s linear infinite;font-size:.85rem;font-weight:600;color:var(--yellow)}
+@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* ---------- Hero ---------- */
+#hero{min-height:100vh;display:flex;align-items:center;padding:130px 0 60px;position:relative}
+#three-bg{position:absolute;inset:0;z-index:0}
+#three-bg canvas{display:block}
+.hero-grid{position:relative;z-index:2;display:grid;grid-template-columns:1.2fr .9fr;gap:34px;align-items:center;width:100%}
+@media(max-width:920px){.hero-grid{grid-template-columns:1fr}}
+.hero-left h1{font-size:clamp(1.9rem,4.6vw,3.3rem);font-weight:800;line-height:1.12;margin:14px 0}
+.hero-left p.lead{color:var(--txt2);font-size:1.02rem;max-width:520px;margin-bottom:22px}
+.hero-cta{display:flex;gap:12px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 22px;border-radius:14px;font-weight:700;font-size:.9rem;text-decoration:none;transition:.25s;border:none;cursor:pointer;font-family:inherit}
+.btn-p{background:linear-gradient(135deg,var(--bay),var(--cyan));color:#fff;box-shadow:0 8px 24px rgba(24,90,219,.45)}
+.btn-p:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(0,201,255,.5)}
+.btn-o{border:1px solid var(--card-brd);background:var(--card);color:var(--txt)}
+.btn-o:hover{border-color:var(--cyan);color:var(--cyan)}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--safe);animation:pulse 1.6s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(34,197,94,.6)}70%{box-shadow:0 0 0 9px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
+
+.now-card{padding:26px;position:relative;overflow:hidden}
+.now-card::after{content:"";position:absolute;top:-60px;right:-60px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(0,201,255,.28),transparent 70%)}
+.now-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.now-city{font-weight:700;font-size:1.05rem}
+.now-city small{display:block;color:var(--txt2);font-weight:500;font-size:.72rem;margin-top:2px}
+.now-main{display:flex;align-items:center;gap:16px;margin:14px 0 6px}
+.now-temp{font-size:4.2rem;font-weight:800;font-family:'Poppins',sans-serif;line-height:1}
+.now-temp sup{font-size:1.6rem;color:var(--cyan)}
+.now-ico{font-size:3.4rem;filter:drop-shadow(0 6px 14px rgba(0,201,255,.35))}
+.now-desc{color:var(--txt2);font-weight:600;margin-bottom:16px}
+.now-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.nstat{background:rgba(255,255,255,.05);border:1px solid var(--card-brd);border-radius:14px;padding:10px;text-align:center}
+[data-theme="light"] .nstat{background:rgba(255,255,255,.5)}
+.nstat b{display:block;font-size:.95rem}
+.nstat span{font-size:.65rem;color:var(--txt2);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+
+/* ---------- Districts ---------- */
+.dist-layout{display:grid;grid-template-columns:340px 1fr;gap:26px;align-items:start}
+@media(max-width:920px){.dist-layout{grid-template-columns:1fr}}
+.map-card{padding:18px;position:sticky;top:100px}
+.map-card svg{width:100%;height:auto}
+.map-dot{cursor:pointer;transition:.2s}
+.map-dot circle.c{fill:var(--cyan);stroke:rgba(0,201,255,.35);stroke-width:6;transition:.2s}
+.map-dot:hover circle.c,.map-dot.sel circle.c{fill:var(--yellow);stroke:rgba(255,195,0,.35)}
+.map-dot text{fill:var(--txt2);font-size:8.5px;font-weight:600;pointer-events:none}
+.ap-shape{fill:rgba(24,90,219,.16);stroke:var(--bay);stroke-width:1.6;stroke-linejoin:round}
+.dist-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.dcard{padding:14px;cursor:pointer;transition:.25s;position:relative}
+.dcard:hover{transform:translateY(-4px);border-color:var(--cyan)}
+.dcard.sel{border-color:var(--yellow);box-shadow:0 0 0 1px var(--yellow),var(--shadow)}
+.dcard h4{font-size:.8rem;font-weight:700;margin-bottom:6px;line-height:1.25}
+.dcard .dtemp{font-size:1.55rem;font-weight:800;font-family:'Poppins',sans-serif}
+.dcard .dico{position:absolute;top:12px;right:12px;font-size:1.5rem}
+.dcard .dmeta{margin-top:6px;font-size:.68rem;color:var(--txt2);display:flex;gap:8px;flex-wrap:wrap;font-weight:600}
+.skel{animation:skel 1.4s infinite;background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);background-size:200% 100%}
+@keyframes skel{from{background-position:200% 0}to{background-position:-200% 0}}
+
+/* ---------- District detail ---------- */
+#dist-detail{margin-top:26px;padding:24px;display:none}
+#dist-detail.on{display:block;animation:fadeUp .45s}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.dd-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.dd-days{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px}
+.dd-day{background:rgba(255,255,255,.05);border:1px solid var(--card-brd);border-radius:14px;padding:12px;text-align:center}
+[data-theme="light"] .dd-day{background:rgba(255,255,255,.5)}
+.dd-day .d{font-size:.7rem;font-weight:700;color:var(--txt2);text-transform:uppercase}
+.dd-day .i{font-size:1.7rem;margin:6px 0}
+.dd-day .t{font-weight:700;font-size:.85rem}
+.dd-day .r{font-size:.68rem;color:var(--cyan);font-weight:600;margin-top:3px}
+
+/* ---------- Forecast timeline ---------- */
+.fc-scroll{display:flex;gap:14px;overflow-x:auto;padding:6px 4px 18px;scroll-snap-type:x mandatory}
+.fc-scroll::-webkit-scrollbar{height:8px}
+.fc-scroll::-webkit-scrollbar-thumb{background:var(--bay);border-radius:99px}
+.fc-card{min-width:150px;scroll-snap-align:start;padding:18px 14px;text-align:center;transition:.25s}
+.fc-card:hover{transform:translateY(-6px) scale(1.02);border-color:var(--cyan)}
+.fc-card .day{font-weight:700;font-size:.8rem}
+.fc-card .date{font-size:.68rem;color:var(--txt2);margin-bottom:8px}
+.fc-card .fico{font-size:2.6rem;margin:8px 0;display:inline-block;animation:float 3.5s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+.fc-card .mx{font-weight:800;font-size:1.15rem}
+.fc-card .mn{color:var(--txt2);font-weight:600;font-size:.85rem}
+.fc-card .row{display:flex;justify-content:space-between;font-size:.66rem;color:var(--txt2);font-weight:600;margin-top:8px;border-top:1px dashed var(--card-brd);padding-top:7px}
+.fc-card .row b{color:var(--cyan)}
+#tempChartBox{padding:22px;margin-top:24px}
+
+/* ---------- Rytu / Matsya ---------- */
+.split{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+@media(max-width:920px){.split{grid-template-columns:1fr}}
+.advis{padding:24px}
+.advis h3{display:flex;align-items:center;gap:10px;font-size:1.15rem;margin-bottom:14px}
+.adv-item{display:flex;gap:12px;padding:12px 0;border-bottom:1px dashed var(--card-brd);font-size:.88rem;line-height:1.5}
+.adv-item:last-child{border:none}
+.adv-item .e{font-size:1.4rem;flex:none}
+.adv-item b{display:block;font-size:.82rem}
+.adv-item span{color:var(--txt2);font-size:.8rem}
+select.sel-dist{background:var(--card);border:1px solid var(--card-brd);color:var(--txt);border-radius:12px;padding:9px 14px;font-family:inherit;font-weight:600;font-size:.85rem;cursor:pointer;backdrop-filter:blur(10px)}
+select.sel-dist option{background:#0A1931;color:#fff}
+.agg{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:16px 0}
+.agg .a{background:rgba(255,255,255,.05);border:1px solid var(--card-brd);border-radius:14px;padding:12px;text-align:center}
+[data-theme="light"] .agg .a{background:rgba(255,255,255,.5)}
+.agg b{display:block;font-size:1.15rem;font-family:'Poppins',sans-serif}
+.agg span{font-size:.65rem;color:var(--txt2);font-weight:700;text-transform:uppercase}
+.safe-banner{display:flex;align-items:center;gap:14px;padding:18px 22px;border-radius:16px;font-weight:800;font-size:1.05rem;margin:16px 0;border:1px solid}
+.safe-banner.ok{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.45);color:var(--safe)}
+.safe-banner.no{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.5);color:var(--danger);animation:blink 1.8s infinite}
+@keyframes blink{50%{box-shadow:0 0 22px rgba(239,68,68,.35)}}
+.windy-box{border-radius:18px;overflow:hidden;border:1px solid var(--card-brd);margin-top:18px}
+.windy-box iframe{display:block;width:100%;height:420px;border:0}
+
+/* ---------- Alerts ---------- */
+#alert-list{display:grid;gap:12px}
+.al{display:flex;gap:14px;align-items:center;padding:16px 20px;border-radius:16px;font-weight:600;font-size:.9rem;border:1px solid}
+.al.warn{background:rgba(255,195,0,.1);border-color:rgba(255,195,0,.4);color:var(--yellow)}
+.al.dang{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.45);color:var(--danger)}
+.al.ok{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.4);color:var(--safe)}
+.al .e{font-size:1.5rem}
+
+/* ---------- Instagram ---------- */
+.ig-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;align-items:start}
+.ig-embed{border-radius:18px;overflow:hidden;border:1px solid var(--card-brd);background:var(--card)}
+.ig-embed iframe{display:block;width:100%;height:480px;border:0}
+.ig-cta{padding:28px;text-align:center}
+.ig-cta .big{font-size:2.6rem}
+.ig-cta h3{margin:10px 0 4px}
+.ig-cta p{color:var(--txt2);font-size:.85rem;margin-bottom:18px}
+
+/* ---------- Footer ---------- */
+footer{border-top:1px solid var(--card-brd);padding:36px 0 28px;margin-top:40px;background:rgba(10,25,49,.35)}
+[data-theme="light"] footer{background:rgba(255,255,255,.4)}
+.foot{display:flex;flex-wrap:wrap;gap:20px;justify-content:space-between;align-items:center;color:var(--txt2);font-size:.8rem}
+.foot a{color:var(--cyan);text-decoration:none;font-weight:600}
+.disc{margin-top:14px;font-size:.7rem;color:var(--txt2);opacity:.8;line-height:1.5}
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .7s,transform .7s}
+.reveal.in{opacity:1;transform:none}
+#refresh-note{font-size:.7rem;color:var(--txt2);font-weight:600}
+</style>
 </head>
-<body data-theme="cloudy">
+<body>
 
-    <!-- 3D Canvas Background -->
-    <canvas id="weather-canvas" class="hero-canvas"></canvas>
-
-    <div class="app-container">
-        
-        <!-- Top Header -->
-        <header class="top-header">
-            <div class="location-selector" onclick="document.getElementById('location-modal').classList.add('active')">
-                <span id="current-loc-name">Srikakulam</span>
-                <span style="font-size: 0.8rem;">📍</span>
-            </div>
-            <div class="nav-actions">
-                <button id="lang-toggle" class="btn-icon">తెలుగు</button>
-            </div>
-        </header>
-
-        <!-- Main Hero -->
-        <section class="hero">
-            <div id="data-status" class="text-muted" style="font-size: 0.8rem; margin-bottom: 5px;">Connecting...</div>
-            <div class="hero-temp" id="hero-temp">29°</div>
-            <div class="hero-condition" id="hero-condition" data-i18n="conditions.cloudy">Cloudy</div>
-            <div class="hero-highlow">
-                H:<span id="hero-high">32°</span> L:<span id="hero-low">25°</span>
-            </div>
-        </section>
-
-        <!-- Alert Banner -->
-        <div id="alert-banner" class="alert-banner hidden">
-            <div>
-                <span class="alert-icon">⚠️</span>
-                <strong id="alert-banner-text">Heavy Rainfall Warning</strong>
-            </div>
-            <button class="btn-icon" onclick="document.getElementById('alert-banner').classList.add('hidden')">×</button>
-        </div>
-
-        <!-- Hourly Forecast -->
-        <div class="ios-card">
-            <div class="card-header">
-                <span>🕒</span> <span data-i18n="weather.hourly">Hourly Forecast</span>
-            </div>
-            <div class="hourly-strip" id="hourly-container">
-                <!-- Injected via JS -->
-            </div>
-        </div>
-
-        <!-- 7-Day Forecast -->
-        <div class="ios-card">
-            <div class="card-header">
-                <span>📅</span> <span data-i18n="weather.daily">7-Day Forecast</span>
-            </div>
-            <div class="daily-list" id="daily-container">
-                <!-- Injected via JS -->
-            </div>
-        </div>
-
-        <!-- Widget Grid -->
-        <div class="widget-grid">
-            <!-- Wind -->
-            <div class="ios-card" style="margin-bottom: 0;">
-                <div class="card-header"><span>🌬️</span> <span data-i18n="weather.windSpeed">Wind</span></div>
-                <div class="widget-value"><span id="metric-wind">18</span> <span style="font-size:1rem" data-i18n="units.kmh">km/h</span></div>
-                <div class="widget-desc">Blowing constantly</div>
-            </div>
-            
-            <!-- Humidity -->
-            <div class="ios-card" style="margin-bottom: 0;">
-                <div class="card-header"><span>💧</span> <span data-i18n="weather.humidity">Humidity</span></div>
-                <div class="widget-value"><span id="metric-humidity">87</span>%</div>
-                <div class="widget-desc">The dew point is <span id="metric-dew">26</span>° right now.</div>
-            </div>
-
-            <!-- Feels Like -->
-            <div class="ios-card" style="margin-bottom: 0;">
-                <div class="card-header"><span>🌡️</span> <span data-i18n="weather.feelsLike">Feels Like</span></div>
-                <div class="widget-value"><span id="metric-feels">34</span>°</div>
-                <div class="widget-desc">Humidity is making it feel hotter.</div>
-            </div>
-
-            <!-- Rainfall -->
-            <div class="ios-card" style="margin-bottom: 0;">
-                <div class="card-header"><span>☔</span> <span data-i18n="weather.rainfall">Rainfall</span></div>
-                <div class="widget-value"><span id="metric-rain">4.2</span> <span style="font-size:1rem" data-i18n="units.mm">mm</span></div>
-                <div class="widget-desc">In the last hour.</div>
-            </div>
-        </div>
-        
-        <br>
-
-        <!-- Map Widget -->
-        <div class="ios-card">
-            <div class="card-header">
-                <span>🗺️</span> <span data-i18n="nav.maps">Map</span>
-            </div>
-            <div id="weather-map" class="map-widget"></div>
-        </div>
-
-        <!-- Farmer's Hub (Special Green Cards) -->
-        <div class="farmer-hub" style="margin-top: 20px;">
-            <h3 style="margin-left: 10px; margin-bottom: 10px;" data-i18n="farmer.dashboard">Farmer's Dashboard</h3>
-            
-            <div class="ios-card">
-                <div class="advisory-row">
-                    <div class="advisory-title">🚜 <span data-i18n="farmer.sprayAdvisory">Spray Advisory</span></div>
-                    <div class="advisory-status status-bad" id="spray-status" data-i18n="farmer.notSuitable">Not Suitable</div>
-                </div>
-                <div class="widget-desc" id="spray-reason">High chances of rainfall today.</div>
-            </div>
-
-            <div class="ios-card">
-                <div class="advisory-row">
-                    <div class="advisory-title">💧 <span data-i18n="farmer.irrigationAdvice">Irrigation Advice</span></div>
-                    <div class="advisory-status status-good" id="irrigation-status" data-i18n="farmer.notSuitable">Not Needed</div>
-                </div>
-                <div class="widget-desc" id="irrigation-reason">Recent rainfall has provided adequate moisture.</div>
-            </div>
-        </div>
-
-        <!-- Footer -->
-        <div style="text-align: center; margin-top: 40px;">
-            <img src="mainphoto.jpg" alt="Weatherman" style="width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 15px auto; border: 2px solid rgba(255,255,255,0.5);">
-            <div style="font-weight: 500;">Srikakulam Weatherman</div>
-            <div class="text-muted" style="font-size: 0.9rem; margin-bottom: 20px;" data-i18n="footer.tagline">Built for the community</div>
-            <a href="https://www.instagram.com/srikakulam_weatherman" target="_blank" style="background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; font-size: 0.9rem;">
-                Follow on Instagram
-            </a>
-        </div>
-
+<!-- ================= HEADER ================= -->
+<header>
+  <div class="bar glass wrap">
+    <a class="logo" href="#hero">
+      <span class="ic">⛈️</span>
+      <span>Srikakulam Weatherman<small class="en">Live AP Weather Hub</small><small class="te">లైవ్ AP వాతావరణ హబ్</small></span>
+    </a>
+    <nav>
+      <a href="#districts"><span class="en">Districts</span><span class="te">జిల్లాలు</span></a>
+      <a href="#forecast"><span class="en">Forecast</span><span class="te">సూచన</span></a>
+      <a href="#rytu"><span class="en">Rytu Vani</span><span class="te">రైతు వాణి</span></a>
+      <a href="#matsya"><span class="en">Matsyakara Vani</span><span class="te">మత్స్యకార వాణి</span></a>
+      <a href="#alerts"><span class="en">Alerts</span><span class="te">హెచ్చరికలు</span></a>
+      <a href="#insta">Instagram</a>
+    </nav>
+    <span id="clock">--:--:--</span>
+    <div class="hbtns">
+      <button class="tgl" id="langTgl" title="Language">తె / EN</button>
+      <button class="tgl" id="themeTgl" title="Theme">🌙</button>
     </div>
+  </div>
+</header>
 
-    <!-- Location Modal -->
-    <div id="location-modal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 data-i18n="ui.selectLocation">Select Location</h3>
-                <button class="close-modal" onclick="document.getElementById('location-modal').classList.remove('active')">✕</button>
-            </div>
-            <div class="loc-list" id="location-list">
-                <!-- Injected via JS -->
-            </div>
-        </div>
+<!-- ================= HERO ================= -->
+<section id="hero">
+  <div id="three-bg"></div>
+  <div class="wrap hero-grid">
+    <div class="hero-left">
+      <span class="chip"><span class="live-dot"></span><span class="en">LIVE · All 26 Districts of Andhra Pradesh</span><span class="te">లైవ్ · ఆంధ్రప్రదేశ్ 26 జిల్లాలు</span></span>
+      <h1>
+        <span class="en">Your Hyper-Local <span class="grad-txt">AP Weather</span> Hub</span>
+        <span class="te">మీ హైపర్-లోకల్ <span class="grad-txt">AP వాతావరణ</span> హబ్</span>
+      </h1>
+      <p class="lead">
+        <span class="en">Real weather station data, satellite maps & honest forecasts — from the coast of Srikakulam to Rayalaseema. Trusted by 130K+ followers.</span>
+        <span class="te">నిజమైన వెదర్ స్టేషన్ డేటా, శాటిలైట్ మ్యాప్స్ & నమ్మదగిన సూచనలు — శ్రీకాకుళం తీరం నుండి రాయలసీమ వరకు. 130K+ ఫాలోవర్ల నమ్మకం.</span>
+      </p>
+      <div class="hero-cta">
+        <a class="btn btn-p" href="#districts"><span class="en">Check Your District</span><span class="te">మీ జిల్లా చూడండి</span> →</a>
+        <a class="btn btn-o" href="https://www.instagram.com/srikakulam_weatherman" target="_blank" rel="noopener">📸 @srikakulam_weatherman</a>
+      </div>
     </div>
+    <div class="now-card glass" id="nowCard">
+      <div class="now-top">
+        <div class="now-city">📍 <span class="en">Srikakulam</span><span class="te">శ్రీకాకుళం</span><small id="nowUpdated">—</small></div>
+        <span class="chip"><span class="live-dot"></span>LIVE</span>
+      </div>
+      <div class="now-main">
+        <div class="now-temp" id="nowTemp">--<sup>°C</sup></div>
+        <div class="now-ico" id="nowIco">⛅</div>
+      </div>
+      <div class="now-desc" id="nowDesc">Loading…</div>
+      <div class="now-stats">
+        <div class="nstat"><b id="nowFeels">--°</b><span class="en">Feels like</span><span class="te">అనుభూతి</span></div>
+        <div class="nstat"><b id="nowHum">--%</b><span class="en">Humidity</span><span class="te">తేమ</span></div>
+        <div class="nstat"><b id="nowWind">--</b><span class="en">Wind km/h</span><span class="te">గాలి km/h</span></div>
+        <div class="nstat"><b id="nowAqi">--</b><span>AQI</span></div>
+        <div class="nstat"><b id="nowRise">--:--</b><span class="en">Sunrise</span><span class="te">సూర్యోదయం</span></div>
+        <div class="nstat"><b id="nowSet">--:--</b><span class="en">Sunset</span><span class="te">సూర్యాస్తమయం</span></div>
+      </div>
+    </div>
+  </div>
+</section>
 
-    <!-- Scripts -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<!-- ================= TICKER ================= -->
+<div class="ticker"><div class="ticker-in" id="tickerIn">⏳ Loading live alerts…</div></div>
 
-    <!-- App Parts -->
-    <script src="parts/data.js"></script>
-    <script src="parts/scene.js"></script>
-    <script src="parts/api.js"></script>
-    
-    <!-- Main App Logic -->
-    <script>
-        // Global State
-        window.currentLang = 'en';
-        window.currentLocation = 'srikakulam';
-        
-        // Translation Helper
-        function t(keyPath) {
-            const keys = keyPath.split('.');
-            let value = TRANSLATIONS[window.currentLang];
-            for (const key of keys) {
-                if (value === undefined) return null;
-                value = value[key];
-            }
-            return value || keyPath;
-        }
+<!-- ================= DISTRICTS ================= -->
+<section id="districts">
+  <div class="wrap">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:10px">
+      <div>
+        <h2 class="sec-title"><span class="en">AP Districts <span class="grad-txt">Live Grid</span></span><span class="te">AP జిల్లాల <span class="grad-txt">లైవ్ గ్రిడ్</span></span></h2>
+        <p class="sec-sub"><span class="en">Tap any district on the map or grid for live conditions & 5-day forecast.</span><span class="te">లైవ్ వాతావరణం & 5-రోజుల సూచన కోసం మ్యాప్ లేదా గ్రిడ్‌లో ఏ జిల్లానైనా నొక్కండి.</span></p>
+      </div>
+      <span id="refresh-note">⟳ <span class="en">Auto-refresh every 10 min</span><span class="te">ప్రతి 10 నిమిషాలకు రిఫ్రెష్</span> · <span id="lastRefresh">—</span></span>
+    </div>
+    <div class="dist-layout">
+      <div class="map-card glass">
+        <svg id="apMap" viewBox="0 0 400 430" xmlns="http://www.w3.org/2000/svg" aria-label="Andhra Pradesh districts map">
+          <path class="ap-shape" d="M258,18 L290,30 L318,52 L330,80 L352,108 L368,140 L376,168 L370,196
+            L352,220 L330,246 L300,278 L272,308 L248,338 L226,368 L208,396 L196,414
+            L178,404 L158,382 L150,356 L136,338 L118,326 L100,306 L96,282 L82,266
+            L60,258 L44,240 L40,216 L52,196 L48,172 L64,158 L88,152 L96,132
+            L120,124 L142,128 L162,118 L180,124 L200,112 L214,90 L224,64 L238,40 Z"/>
+          <g id="mapDots"></g>
+        </svg>
+        <p style="font-size:.68rem;color:var(--txt2);margin-top:8px;text-align:center"><span class="en">Stylised map · district HQ locations</span><span class="te">స్టైలైజ్డ్ మ్యాప్ · జిల్లా కేంద్రాలు</span></p>
+      </div>
+      <div>
+        <div class="dist-grid" id="distGrid"></div>
+        <div id="dist-detail" class="glass">
+          <div class="dd-head">
+            <h3 id="ddName" style="font-size:1.3rem">—</h3>
+            <span class="chip" id="ddNow">—</span>
+          </div>
+          <div class="dd-days" id="ddDays"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
-        // Apply Translations to DOM
-        function applyTranslations() {
-            document.querySelectorAll('[data-i18n]').forEach(el => {
-                const key = el.getAttribute('data-i18n');
-                const translation = t(key);
-                if (translation) el.textContent = translation;
-            });
-            
-            document.getElementById('lang-toggle').textContent = window.currentLang === 'en' ? 'తెలుగు' : 'English';
-            if (window.currentLang === 'te') document.body.classList.add('telugu');
-            else document.body.classList.remove('telugu');
+<!-- ================= FORECAST ================= -->
+<section id="forecast" style="background:rgba(24,90,219,.05)">
+  <div class="wrap">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px">
+      <div>
+        <h2 class="sec-title"><span class="en">8-Day <span class="grad-txt">Advanced Forecast</span></span><span class="te">8-రోజుల <span class="grad-txt">అడ్వాన్స్డ్ సూచన</span></span></h2>
+        <p class="sec-sub"><span class="en">Max/min temp, rain probability, wind gusts & humidity.</span><span class="te">గరిష్ట/కనిష్ట ఉష్ణోగ్రత, వర్ష సంభావ్యత, గాలుల వేగం & తేమ.</span></p>
+      </div>
+      <select class="sel-dist" id="fcDist"></select>
+    </div>
+    <div class="fc-scroll" id="fcScroll"></div>
+    <div id="tempChartBox" class="glass">
+      <h4 style="margin-bottom:14px"><span class="en">🌡️ Temperature Trend</span><span class="te">🌡️ ఉష్ణోగ్రత ధోరణి</span></h4>
+      <canvas id="tempChart" height="90"></canvas>
+    </div>
+  </div>
+</section>
 
-            renderLocations();
-            const location = LOCATIONS.find(l => l.id === window.currentLocation);
-            document.getElementById('current-loc-name').textContent = location.name[window.currentLang];
-            
-            // Re-render hourly/daily to update days/times
-            if(MOCK_WEATHER_BY_LOCATION[window.currentLocation]) {
-                const weather = MOCK_WEATHER_BY_LOCATION[window.currentLocation];
-                renderForecasts(weather);
-                renderFarmerHub();
-                updateWeatherInterface(window.currentLocation, weather); // updates condition text
-            }
-        }
+<!-- ================= RYTU VANI ================= -->
+<section id="rytu">
+  <div class="wrap">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px">
+      <div>
+        <h2 class="sec-title">🌾 <span class="en">Rytu Vani — <span class="grad-txt">Farmers Special</span></span><span class="te">రైతు వాణి — <span class="grad-txt">రైతుల ప్రత్యేకం</span></span></h2>
+        <p class="sec-sub"><span class="en">Weather-based crop advisory. Vari vestada? Mirchi ki mandu kottavacha? — answered with live data.</span><span class="te">వాతావరణ ఆధారిత పంట సలహా. వరి వేస్తదా? మిర్చికి మందు కొట్టవచ్చా? — లైవ్ డేటాతో సమాధానం.</span></p>
+      </div>
+      <select class="sel-dist" id="rytuDist"></select>
+    </div>
+    <div class="agg" id="rytuAgg"></div>
+    <div class="split">
+      <div class="advis glass"><h3>🚜 <span class="en">Field Operations</span><span class="te">పొలం పనులు</span></h3><div id="rytuOps"></div></div>
+      <div class="advis glass"><h3>🌱 <span class="en">Crop Advisory</span><span class="te">పంట సలహా</span></h3><div id="rytuCrop"></div></div>
+    </div>
+  </div>
+</section>
 
-        // Generate UI from Weather Data
-        function renderForecasts(weather) {
-            // Hourly
-            const hContainer = document.getElementById('hourly-container');
-            hContainer.innerHTML = '';
-            weather.hourly.slice(0, 24).forEach((h, i) => {
-                const date = new Date(h.time * 1000);
-                let timeStr = date.getHours() === new Date().getHours() && i === 0 ? t('time.now') : date.getHours() + ':00';
-                
-                // Map condition to emoji
-                const emojiMap = { 'sunny': '☀️', 'clearNight': '🌙', 'cloudy': '☁️', 'partlyCloudy': '⛅', 'rainy': '🌧️', 'heavyRain': '⛈️', 'thunderstorm': '🌩️', 'foggy': '🌫️', 'hazy': '🌫️', 'drizzle': '🌦️' };
-                const emoji = emojiMap[h.condition] || '☁️';
-                
-                hContainer.innerHTML += `
-                    <div class="hourly-item">
-                        <div class="hourly-time">${timeStr}</div>
-                        <div class="hourly-icon">${emoji}</div>
-                        <div class="hourly-temp">${Math.round(h.temp)}°</div>
-                    </div>
-                `;
-            });
+<!-- ================= MATSYAKARA VANI ================= -->
+<section id="matsya" style="background:rgba(0,201,255,.04)">
+  <div class="wrap">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px">
+      <div>
+        <h2 class="sec-title">🎣 <span class="en">Matsyakara Vani — <span class="grad-txt">Fishermen Special</span></span><span class="te">మత్స్యకార వాణి — <span class="grad-txt">మత్స్యకారుల ప్రత్యేకం</span></span></h2>
+        <p class="sec-sub"><span class="en">Bay of Bengal sea conditions for the AP coast. Always verify with INCOIS/IMD before venturing.</span><span class="te">AP తీరానికి బంగాళాఖాతం సముద్ర పరిస్థితులు. వేటకు వెళ్లే ముందు INCOIS/IMD తో ధృవీకరించండి.</span></p>
+      </div>
+      <select class="sel-dist" id="seaDist"></select>
+    </div>
+    <div class="safe-banner ok" id="seaBanner"><span style="font-size:1.8rem" id="seaBannerIco">✅</span><span id="seaBannerTxt">—</span></div>
+    <div class="agg" id="seaAgg"></div>
+    <div class="split">
+      <div class="advis glass">
+        <h3>🌊 <span class="en">Sea Advisory</span><span class="te">సముద్ర సలహా</span></h3>
+        <div id="seaAdv"></div>
+        <p style="font-size:.72rem;color:var(--txt2);margin-top:12px">
+          <span class="en">Tide timings & official fishermen warnings: </span><span class="te">అలల సమయాలు & అధికారిక హెచ్చరికలు: </span>
+          <a href="https://incois.gov.in/portal/osf/osf.jsp" target="_blank" rel="noopener" style="color:var(--cyan)">INCOIS</a> ·
+          <a href="https://mausam.imd.gov.in/imd_latest/contents/coastal_bulletin.php" target="_blank" rel="noopener" style="color:var(--cyan)">IMD Coastal Bulletin</a>
+        </p>
+      </div>
+      <div>
+        <h3 style="margin-bottom:10px">🌀 <span class="en">Cyclone / Low Pressure Tracker</span><span class="te">తుఫాను / అల్పపీడన ట్రాకర్</span></h3>
+        <div class="windy-box glass" style="margin-top:0">
+          <iframe title="Windy wind map Bay of Bengal" src="https://embed.windy.com/embed2.html?lat=15.5&lon=84.0&detailLat=17.5&detailLon=83.3&width=650&height=420&zoom=5&level=surface&overlay=wind&product=ecmwf&menu=&message=true&marker=true&calendar=now&pressure=true&type=map&location=coordinates&detail=&metricWind=km%2Fh&metricTemp=%C2%B0C&radarRange=-1" loading="lazy"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
-            // Daily
-            const dContainer = document.getElementById('daily-container');
-            dContainer.innerHTML = '';
-            
-            const maxOfAll = Math.max(...weather.daily.map(d => d.temp.max));
-            const minOfAll = Math.min(...weather.daily.map(d => d.temp.min));
-            const range = maxOfAll - minOfAll;
+<!-- ================= ALERTS & RADAR ================= -->
+<section id="alerts">
+  <div class="wrap">
+    <h2 class="sec-title">⚠️ <span class="en">Live Alerts & <span class="grad-txt">Radar</span></span><span class="te">లైవ్ హెచ్చరికలు & <span class="grad-txt">రాడార్</span></span></h2>
+    <p class="sec-sub"><span class="en">Auto-generated from live data across all 26 districts. For official warnings refer IMD.</span><span class="te">26 జిల్లాల లైవ్ డేటా నుండి ఆటో-జనరేటెడ్. అధికారిక హెచ్చరికల కోసం IMD చూడండి.</span></p>
+    <div id="alert-list"></div>
+    <div class="windy-box glass">
+      <iframe title="Windy radar Andhra Pradesh" src="https://embed.windy.com/embed2.html?lat=16.5&lon=80.5&detailLat=18.3&detailLon=83.9&width=650&height=420&zoom=6&level=surface&overlay=radar&product=radar&menu=&message=true&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=km%2Fh&metricTemp=%C2%B0C&radarRange=-1" loading="lazy"></iframe>
+    </div>
+    <p style="font-size:.72rem;color:var(--txt2);margin-top:10px">
+      <span class="en">Satellite & radar: </span><span class="te">శాటిలైట్ & రాడార్: </span>
+      <a href="https://mausam.imd.gov.in/imd_latest/contents/satellite.php" target="_blank" rel="noopener" style="color:var(--cyan)">IMD Satellite</a> ·
+      <a href="https://mausam.imd.gov.in/imd_latest/contents/index_radar.php" target="_blank" rel="noopener" style="color:var(--cyan)">IMD Radar</a>
+    </p>
+  </div>
+</section>
 
-            weather.daily.forEach((d, i) => {
-                const date = new Date(d.date);
-                const dayStr = i === 0 ? t('time.today') : t('days.' + ['sun','mon','tue','wed','thu','fri','sat'][date.getDay()]);
-                const emojiMap = { 'sunny': '☀️', 'clearNight': '🌙', 'cloudy': '☁️', 'partlyCloudy': '⛅', 'rainy': '🌧️', 'heavyRain': '⛈️', 'thunderstorm': '🌩️', 'foggy': '🌫️', 'hazy': '🌫️', 'drizzle': '🌦️' };
-                const emoji = emojiMap[d.condition] || '☁️';
+<!-- ================= INSTAGRAM ================= -->
+<section id="insta" style="background:rgba(24,90,219,.05)">
+  <div class="wrap">
+    <h2 class="sec-title">📸 <span class="en">Latest from <span class="grad-txt">@srikakulam_weatherman</span></span><span class="te"><span class="grad-txt">@srikakulam_weatherman</span> నుండి తాజా అప్‌డేట్స్</span></h2>
+    <p class="sec-sub"><span class="en">Reels, forecasts & storm updates for 130K+ followers.</span><span class="te">130K+ ఫాలోవర్లకు రీల్స్, సూచనలు & తుఫాను అప్‌డేట్స్.</span></p>
+    <div class="ig-grid">
+      <div class="ig-embed glass"><iframe title="Instagram profile" src="https://www.instagram.com/srikakulam_weatherman/embed" loading="lazy" allowtransparency="true"></iframe></div>
+      <div class="ig-cta glass">
+        <div class="big">⛈️📱</div>
+        <h3>@srikakulam_weatherman</h3>
+        <p><span class="en">Hyper-local AP weather, CGI cloud animations, cyclone trackers & real weather-station data — follow for daily updates in Telugu + English.</span><span class="te">హైపర్-లోకల్ AP వాతావరణం, CGI క్లౌడ్ యానిమేషన్లు, తుఫాను ట్రాకర్లు — తెలుగు + ఇంగ్లీష్‌లో రోజువారీ అప్‌డేట్స్ కోసం ఫాలో అవ్వండి.</span></p>
+        <a class="btn btn-p" href="https://www.instagram.com/srikakulam_weatherman" target="_blank" rel="noopener"><span class="en">Follow on Instagram</span><span class="te">ఇన్‌స్టాగ్రామ్‌లో ఫాలో అవ్వండి</span></a>
+      </div>
+    </div>
+  </div>
+</section>
 
-                // Calculate bar positions
-                const leftPercent = ((d.temp.min - minOfAll) / range) * 100;
-                const widthPercent = ((d.temp.max - d.temp.min) / range) * 100;
+<!-- ================= FOOTER ================= -->
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <span>⛈️ <b>Powered by Srikakulam Weatherman</b></span>
+      <a href="https://www.instagram.com/srikakulam_weatherman" target="_blank" rel="noopener"><span class="en">Follow on Instagram →</span><span class="te">ఇన్‌స్టాగ్రామ్‌లో ఫాలో అవ్వండి →</span></a>
+    </div>
+    <p class="disc">
+      <span class="en">Disclaimer: Weather data from IMD/OpenWeather/Open-Meteo. Advisories are indicative, auto-generated from forecast models. For official warnings, cyclone bulletins and fishermen advisories always refer to IMD (mausam.imd.gov.in) and INCOIS (incois.gov.in). © 2026 Srikakulam Weatherman.</span>
+      <span class="te">గమనిక: వాతావరణ డేటా IMD/OpenWeather/Open-Meteo నుండి. సలహాలు సూచనాత్మకం, ఫోర్‌కాస్ట్ మోడల్స్ నుండి ఆటో-జనరేటెడ్. అధికారిక హెచ్చరికలు, తుఫాను బులెటిన్లు & మత్స్యకారుల హెచ్చరికల కోసం ఎల్లప్పుడూ IMD (mausam.imd.gov.in) & INCOIS (incois.gov.in) చూడండి. © 2026 శ్రీకాకుళం వెదర్‌మ్యాన్.</span>
+    </p>
+  </div>
+</footer>
 
-                dContainer.innerHTML += `
-                    <div class="daily-item">
-                        <div class="daily-day">${dayStr}</div>
-                        <div class="daily-icon-col">${emoji}</div>
-                        <div class="daily-temps">
-                            <span class="temp-min">${Math.round(d.temp.min)}°</span>
-                            <div class="temp-bar-container">
-                                <div class="temp-bar" style="left: ${leftPercent}%; width: ${widthPercent}%;"></div>
-                            </div>
-                            <span class="temp-max">${Math.round(d.temp.max)}°</span>
-                        </div>
-                    </div>
-                `;
-            });
-        }
+<script>
+/* ================================================================
+   SRIKAKULAM WEATHERMAN — LIVE AP WEATHER HUB
+   ----------------------------------------------------------------
+   OPENWEATHER KEY: paste your key below. While it says
+   "YOUR_OPENWEATHER_API_KEY", the site automatically uses
+   Open-Meteo (free, no key) so everything stays LIVE.
+   ================================================================ */
+const OWM_KEY = "YOUR_OPENWEATHER_API_KEY";
+const USE_OWM = OWM_KEY && !/YOUR_/.test(OWM_KEY);
 
-        function renderFarmerHub() {
-            const spray = FARMER_ADVISORIES.sprayAdvisory;
-            const sprayStatus = document.getElementById('spray-status');
-            document.getElementById('spray-reason').textContent = spray.reason[window.currentLang];
-            
-            if (spray.suitable) {
-                sprayStatus.textContent = window.currentLang === 'te' ? 'అనుకూలం' : 'Suitable';
-                sprayStatus.className = 'advisory-status status-good';
-            } else {
-                sprayStatus.textContent = window.currentLang === 'te' ? 'అనుకూలం కాదు' : 'Not Suitable';
-                sprayStatus.className = 'advisory-status status-bad';
-            }
-            
-            const irr = FARMER_ADVISORIES.irrigationAdvice;
-            const irrStatus = document.getElementById('irrigation-status');
-            document.getElementById('irrigation-reason').textContent = irr.reason[window.currentLang];
-            
-            if (irr.needed) {
-                irrStatus.textContent = window.currentLang === 'te' ? 'అవసరం' : 'Needed';
-                irrStatus.className = 'advisory-status status-bad';
-            } else {
-                irrStatus.textContent = window.currentLang === 'te' ? 'అవసరం లేదు' : 'Not Needed';
-                irrStatus.className = 'advisory-status status-good';
-            }
-        }
+/* ---------- 26 districts: [name EN, name TE, lat, lon, coastal, sea lat, sea lon] ---------- */
+const DISTRICTS = [
+ ["Alluri Sitharama Raju","అల్లూరి సీతారామరాజు",18.08,82.67,0],
+ ["Anakapalli","అనకాపల్లి",17.69,83.00,1,17.5,83.1],
+ ["Anantapuramu","అనంతపురము",14.68,77.60,0],
+ ["Annamayya","అన్నమయ్య",14.05,78.75,0],
+ ["Bapatla","బాపట్ల",15.90,80.47,1,15.75,80.6],
+ ["Chittoor","చిత్తూరు",13.22,79.10,0],
+ ["East Godavari","తూర్పు గోదావరి",17.00,81.78,0],
+ ["Eluru","ఏలూరు",16.71,81.10,0],
+ ["Guntur","గుంటూరు",16.31,80.44,0],
+ ["Kakinada","కాకినాడ",16.99,82.25,1,16.9,82.4],
+ ["Konaseema (Dr.BRA)","కోనసీమ (డా.బి.ఆర్.అం)",16.58,82.01,1,16.5,82.2],
+ ["Kurnool","కర్నూలు",15.83,78.04,0],
+ ["Nandyal","నంద్యాల",15.48,78.48,0],
+ ["Krishna","కృష్ణా",16.19,81.14,1,16.05,81.3],
+ ["NTR","ఎన్టీఆర్",16.51,80.65,0],
+ ["Palnadu","పల్నాడు",16.23,80.05,0],
+ ["Parvathipuram Manyam","పార్వతీపురం మన్యం",18.78,83.43,0],
+ ["Prakasam","ప్రకాశం",15.51,80.05,1,15.3,80.3],
+ ["Sri Sathya Sai","శ్రీ సత్యసాయి",14.17,77.81,0],
+ ["Srikakulam","శ్రీకాకుళం",18.30,83.90,1,18.2,84.1],
+ ["Nellore (SPSR)","నెల్లూరు (SPSR)",14.44,79.99,1,14.4,80.25],
+ ["Tirupati","తిరుపతి",13.63,79.42,1,13.65,80.25],
+ ["Visakhapatnam","విశాఖపట్నం",17.69,83.22,1,17.6,83.4],
+ ["Vizianagaram","విజయనగరం",18.11,83.40,1,17.95,83.6],
+ ["West Godavari","పశ్చిమ గోదావరి",16.54,81.52,1,16.35,81.75],
+ ["YSR Kadapa","వైఎస్ఆర్ కడప",14.47,78.82,0]
+];
+const SRI_IDX = 19; // Srikakulam
 
-        function updateWeatherInterface(locId, weather) {
-            window.currentLocation = locId;
-            const locData = LOCATIONS.find(l => l.id === locId);
-            
-            // Header Info
-            document.getElementById('current-loc-name').textContent = locData.name[window.currentLang];
-            document.getElementById('hero-temp').textContent = Math.round(weather.current.main.temp) + '°';
-            
-            const condKey = 'conditions.' + weather.current.condition;
-            document.getElementById('hero-condition').textContent = t(condKey) || weather.current.condition;
-            
-            document.getElementById('hero-high').textContent = Math.round(weather.daily[0]?.temp.max || weather.current.main.temp_max) + '°';
-            document.getElementById('hero-low').textContent = Math.round(weather.daily[0]?.temp.min || weather.current.main.temp_min) + '°';
-            
-            // Widgets
-            document.getElementById('metric-wind').textContent = Math.round(weather.current.wind.speed);
-            document.getElementById('metric-humidity').textContent = weather.current.main.humidity;
-            document.getElementById('metric-feels').textContent = Math.round(weather.current.main.feels_like);
-            document.getElementById('metric-rain').textContent = weather.current.rain ? weather.current.rain['1h'] : '0';
-            
-            // Optional dew point if it exists
-            const dew = document.getElementById('metric-dew');
-            if (dew) dew.textContent = Math.round(weather.current.main.temp - ((100 - weather.current.main.humidity)/5));
-            
-            // Theme Update
-            document.body.setAttribute('data-theme', weather.current.condition);
-            if (typeof updateSceneWeather === 'function') updateSceneWeather(weather.current.condition);
-            
-            // Alert Banner
-            if (MOCK_ALERTS.length > 0) {
-                const alert = MOCK_ALERTS[0]; // Just show the top mock alert
-                const banner = document.getElementById('alert-banner');
-                banner.classList.remove('hidden');
-                document.getElementById('alert-banner-text').textContent = alert.title[window.currentLang];
-            }
-        }
+/* ---------- WMO weather codes → icon + bilingual description ---------- */
+const WMO = {
+ 0:["☀️","Clear sky","నిర్మలాకాశం"],1:["🌤️","Mostly clear","ఎక్కువగా నిర్మలం"],
+ 2:["⛅","Partly cloudy","పాక్షిక మేఘాలు"],3:["☁️","Overcast","మేఘావృతం"],
+ 45:["🌫️","Fog","పొగమంచు"],48:["🌫️","Rime fog","పొగమంచు"],
+ 51:["🌦️","Light drizzle","తేలికపాటి జల్లులు"],53:["🌦️","Drizzle","జల్లులు"],55:["🌧️","Heavy drizzle","భారీ జల్లులు"],
+ 61:["🌦️","Light rain","తేలికపాటి వర్షం"],63:["🌧️","Moderate rain","మోస్తరు వర్షం"],65:["🌧️","Heavy rain","భారీ వర్షం"],
+ 66:["🌧️","Freezing rain","శీతల వర్షం"],67:["🌧️","Freezing rain","శీతల వర్షం"],
+ 71:["🌨️","Snow","మంచు"],73:["🌨️","Snow","మంచు"],75:["❄️","Heavy snow","భారీ మంచు"],
+ 80:["🌦️","Rain showers","వర్షపు జల్లులు"],81:["🌧️","Rain showers","వర్షపు జల్లులు"],82:["⛈️","Violent showers","తీవ్ర జల్లులు"],
+ 95:["⛈️","Thunderstorm","ఉరుములతో వర్షం"],96:["⛈️","Storm + hail","వడగళ్ల వాన"],99:["⛈️","Storm + hail","వడగళ్ల వాన"]
+};
+const wmo = c => WMO[c] || ["🌡️","Weather","వాతావరణం"];
+const bi = (en,te)=>`<span class="en">${en}</span><span class="te">${te}</span>`;
 
-        async function updateLocation(locId) {
-            window.currentLocation = locId;
-            const location = LOCATIONS.find(l => l.id === locId);
-            
-            const statusEl = document.getElementById('data-status');
-            if (statusEl) statusEl.textContent = 'Fetching live data...';
-            
-            // Fetch live data via API
-            const liveWeather = await fetchWeatherData(location.lat, location.lon, location.name.en);
-            
-            if (liveWeather) {
-                MOCK_WEATHER_BY_LOCATION[locId] = liveWeather;
-                updateWeatherInterface(locId, liveWeather);
-                renderForecasts(liveWeather);
-                
-                const adv = generateFarmerAdvisories(liveWeather);
-                FARMER_ADVISORIES.sprayAdvisory = adv.sprayAdvisory;
-                FARMER_ADVISORIES.irrigationAdvice = adv.irrigationAdvice;
-                renderFarmerHub();
-                
-                if (statusEl) statusEl.textContent = 'Live data connected';
-            } else {
-                // Fallback
-                const fallback = MOCK_WEATHER_BY_LOCATION[locId] || MOCK_WEATHER;
-                updateWeatherInterface(locId, fallback);
-                renderForecasts(fallback);
-                renderFarmerHub();
-                if (statusEl) statusEl.textContent = 'Offline — showing demo data.';
-            }
-            
-            document.getElementById('location-modal').classList.remove('active');
-            renderLocations();
-            
-            // Trigger map reposition
-            if (window.dispatchEvent) {
-                window.dispatchEvent(new CustomEvent('locationChange', { detail: { id: locId } }));
-            }
-        }
+let WX = null;          // array of per-district data
+let selDist = SRI_IDX;  // selected in districts grid
+let chart = null;
 
-        function renderLocations() {
-            const container = document.getElementById('location-list');
-            container.innerHTML = '';
-            
-            // Group locations by division
-            const divisions = {};
-            LOCATIONS.forEach(loc => {
-                const divName = loc.division || 'Other';
-                if (!divisions[divName]) divisions[divName] = [];
-                divisions[divName].push(loc);
-            });
-            
-            for (const [divName, locs] of Object.entries(divisions)) {
-                // Add Division Header
-                const header = document.createElement('div');
-                header.style.padding = '10px 15px';
-                header.style.marginTop = '10px';
-                header.style.color = 'var(--text-secondary)';
-                header.style.fontWeight = 'bold';
-                header.style.fontSize = '0.9rem';
-                header.style.textTransform = 'uppercase';
-                header.textContent = divName;
-                container.appendChild(header);
-                
-                // Add Locations
-                locs.forEach(loc => {
-                    const div = document.createElement('div');
-                    div.className = 'loc-item';
-                    div.style.background = loc.id === window.currentLocation ? '#4ca1af' : '#2c2c2e';
-                    div.onclick = () => updateLocation(loc.id);
-                    div.innerHTML = `<span>${loc.name[window.currentLang]}</span> <span>📍</span>`;
-                    container.appendChild(div);
-                });
-            }
-        }
+/* ================= FETCH ENGINE ================= */
+async function fetchAll(){
+  const lats = DISTRICTS.map(d=>d[2]).join(",");
+  const lons = DISTRICTS.map(d=>d[3]).join(",");
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lons}`+
+    `&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code`+
+    `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,wind_gusts_10m_max,sunrise,sunset`+
+    `&forecast_days=8&timezone=Asia%2FKolkata`;
+  const r = await fetch(url);
+  if(!r.ok) throw new Error("open-meteo "+r.status);
+  const j = await r.json();
+  WX = Array.isArray(j)? j : [j];
 
-        // Initialize App
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('lang-toggle').addEventListener('click', () => {
-                window.currentLang = window.currentLang === 'en' ? 'te' : 'en';
-                applyTranslations();
-            });
-            
-            renderLocations();
-            applyTranslations();
-            updateLocation('srikakulam');
-            
-            setInterval(() => {
-                updateLocation(window.currentLocation);
-            }, 10 * 60 * 1000);
-            
-            // Init heavy visuals (Three.js and Leaflet)
-            setTimeout(() => {
-                if (typeof initAllVisuals === 'function') initAllVisuals();
-                // Fix map resize bug inside card
-                setTimeout(() => window.dispatchEvent(new Event('resize')), 1000);
-            }, 300);
-        });
-    </script>
+  /* Optional OpenWeatherMap overlay for hero current conditions */
+  if(USE_OWM){
+    try{
+      const d = DISTRICTS[SRI_IDX];
+      const ow = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${d[2]}&lon=${d[3]}&units=metric&appid=${OWM_KEY}`).then(x=>x.json());
+      if(ow && ow.main){
+        WX[SRI_IDX].current.temperature_2m = ow.main.temp;
+        WX[SRI_IDX].current.apparent_temperature = ow.main.feels_like;
+        WX[SRI_IDX].current.relative_humidity_2m = ow.main.humidity;
+        WX[SRI_IDX].current.wind_speed_10m = ow.wind.speed*3.6;
+      }
+    }catch(e){ console.warn("OWM failed, using Open-Meteo", e); }
+  }
+}
+async function fetchAqi(){
+  try{
+    const d = DISTRICTS[SRI_IDX];
+    const j = await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${d[2]}&longitude=${d[3]}&current=us_aqi`).then(r=>r.json());
+    document.getElementById("nowAqi").textContent = Math.round(j.current.us_aqi);
+  }catch(e){ document.getElementById("nowAqi").textContent = "—"; }
+}
+async function fetchMarine(i){
+  const d = DISTRICTS[i];
+  const j = await fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${d[5]}&longitude=${d[6]}`+
+    `&current=wave_height,wave_period&daily=wave_height_max&forecast_days=2&timezone=Asia%2FKolkata`).then(r=>r.json());
+  return j;
+}
+
+/* ================= RENDER: HERO ================= */
+function fmtTime(iso){ return iso ? iso.slice(11,16) : "--:--"; }
+function renderHero(){
+  const w = WX[SRI_IDX], c = w.current, dy = w.daily, ic = wmo(c.weather_code);
+  document.getElementById("nowTemp").innerHTML = Math.round(c.temperature_2m)+"<sup>°C</sup>";
+  document.getElementById("nowIco").textContent = ic[0];
+  document.getElementById("nowDesc").innerHTML = bi(ic[1], ic[2]) + ` · H ${Math.round(dy.temperature_2m_max[0])}° / L ${Math.round(dy.temperature_2m_min[0])}°`;
+  document.getElementById("nowFeels").textContent = Math.round(c.apparent_temperature)+"°";
+  document.getElementById("nowHum").textContent = Math.round(c.relative_humidity_2m)+"%";
+  document.getElementById("nowWind").textContent = Math.round(c.wind_speed_10m);
+  document.getElementById("nowRise").textContent = fmtTime(dy.sunrise[0]);
+  document.getElementById("nowSet").textContent = fmtTime(dy.sunset[0]);
+  document.getElementById("nowUpdated").textContent = "Updated "+new Date().toLocaleTimeString("en-IN",{hour:'2-digit',minute:'2-digit'});
+}
+
+/* ================= RENDER: DISTRICT GRID + MAP ================= */
+const px = lon => 10+(lon-76.6)/8.4*380;
+const py = lat => 10+(19.4-lat)/6.9*410;
+function renderMap(){
+  const g = document.getElementById("mapDots");
+  g.innerHTML = DISTRICTS.map((d,i)=>{
+    const t = WX ? Math.round(WX[i].current.temperature_2m)+"°" : "";
+    return `<g class="map-dot${i===selDist?' sel':''}" data-i="${i}">
+      <circle class="c" cx="${px(d[3])}" cy="${py(d[2])}" r="5"></circle>
+      <text x="${px(d[3])+8}" y="${py(d[2])+3}">${t}</text></g>`;
+  }).join("");
+  g.querySelectorAll(".map-dot").forEach(el=>el.addEventListener("click",()=>selectDistrict(+el.dataset.i)));
+}
+function renderGrid(){
+  const grid = document.getElementById("distGrid");
+  grid.innerHTML = DISTRICTS.map((d,i)=>{
+    const w = WX[i], c = w.current, dy = w.daily, ic = wmo(c.weather_code);
+    return `<div class="dcard glass${i===selDist?' sel':''}" data-i="${i}">
+      <h4>${bi(d[0],d[1])}</h4>
+      <div class="dtemp">${Math.round(c.temperature_2m)}°</div>
+      <div class="dico">${ic[0]}</div>
+      <div class="dmeta"><span>🌧️ ${dy.precipitation_probability_max[0] ?? 0}%</span><span>💨 ${Math.round(c.wind_speed_10m)} km/h</span></div>
+    </div>`;
+  }).join("");
+  grid.querySelectorAll(".dcard").forEach(el=>el.addEventListener("click",()=>selectDistrict(+el.dataset.i)));
+}
+const DAYS_EN=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"], DAYS_TE=["ఆది","సోమ","మంగళ","బుధ","గురు","శుక్ర","శని"];
+function dayName(iso,k){ const d=new Date(iso+"T00:00:00"); return k==="te"?DAYS_TE[d.getDay()]:DAYS_EN[d.getDay()]; }
+function selectDistrict(i){
+  selDist = i;
+  renderGrid(); renderMap();
+  const w = WX[i], dy = w.daily, c = w.current, ic = wmo(c.weather_code);
+  const box = document.getElementById("dist-detail");
+  box.classList.add("on");
+  document.getElementById("ddName").innerHTML = "📍 "+bi(DISTRICTS[i][0],DISTRICTS[i][1]);
+  document.getElementById("ddNow").innerHTML = `${ic[0]} ${Math.round(c.temperature_2m)}°C · ` + bi(ic[1],ic[2]);
+  document.getElementById("ddDays").innerHTML = dy.time.slice(0,5).map((t,k)=>`
+    <div class="dd-day">
+      <div class="d">${bi(dayName(t,'en'),dayName(t,'te'))}</div>
+      <div class="i">${wmo(dy.weather_code[k])[0]}</div>
+      <div class="t">${Math.round(dy.temperature_2m_max[k])}° <span style="color:var(--txt2)">${Math.round(dy.temperature_2m_min[k])}°</span></div>
+      <div class="r">🌧️ ${dy.precipitation_probability_max[k] ?? 0}% · 💨 ${Math.round(dy.wind_gusts_10m_max[k])}</div>
+    </div>`).join("");
+  if(i!==+document.getElementById("fcDist").value){ document.getElementById("fcDist").value = i; renderForecast(); }
+  box.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+
+/* ================= RENDER: FORECAST ================= */
+function fillSelects(){
+  const opts = DISTRICTS.map((d,i)=>`<option value="${i}">${d[0]} / ${d[1]}</option>`).join("");
+  ["fcDist","rytuDist"].forEach(id=>{ const s=document.getElementById(id); s.innerHTML=opts; s.value=SRI_IDX; });
+  const sea = document.getElementById("seaDist");
+  sea.innerHTML = DISTRICTS.map((d,i)=>d[4]?`<option value="${i}">${d[0]} / ${d[1]}</option>`:"").join("");
+  sea.value = SRI_IDX;
+}
+function renderForecast(){
+  const i = +document.getElementById("fcDist").value, dy = WX[i].daily;
+  document.getElementById("fcScroll").innerHTML = dy.time.map((t,k)=>{
+    const ic = wmo(dy.weather_code[k]);
+    return `<div class="fc-card glass">
+      <div class="day">${k===0?bi("Today","నేడు"):bi(dayName(t,'en'),dayName(t,'te'))}</div>
+      <div class="date">${t.slice(8,10)}/${t.slice(5,7)}</div>
+      <div class="fico" style="animation-delay:${k*.25}s">${ic[0]}</div>
+      <div class="mx">${Math.round(dy.temperature_2m_max[k])}°</div>
+      <div class="mn">${Math.round(dy.temperature_2m_min[k])}°</div>
+      <div class="row"><span>🌧️</span><b>${dy.precipitation_probability_max[k] ?? 0}%</b></div>
+      <div class="row"><span>💨 ${bi("Gust","గాలులు")}</span><b>${Math.round(dy.wind_gusts_10m_max[k])} km/h</b></div>
+      <div class="row"><span>💧</span><b>${(dy.precipitation_sum[k]??0).toFixed(1)} mm</b></div>
+    </div>`;
+  }).join("");
+  renderChart(i);
+}
+function renderChart(i){
+  const dy = WX[i].daily, ctx = document.getElementById("tempChart");
+  const labels = dy.time.map(t=>t.slice(8,10)+"/"+t.slice(5,7));
+  if(chart) chart.destroy();
+  chart = new Chart(ctx,{type:"line",data:{labels,datasets:[
+    {label:"Max °C",data:dy.temperature_2m_max,borderColor:"#FFC300",backgroundColor:"rgba(255,195,0,.12)",fill:true,tension:.4,pointRadius:4},
+    {label:"Min °C",data:dy.temperature_2m_min,borderColor:"#00C9FF",backgroundColor:"rgba(0,201,255,.10)",fill:true,tension:.4,pointRadius:4}
+  ]},options:{plugins:{legend:{labels:{color:getComputedStyle(document.body).getPropertyValue("--txt2")}}},
+    scales:{x:{ticks:{color:"#8aa0c4"},grid:{color:"rgba(140,160,200,.08)"}},y:{ticks:{color:"#8aa0c4"},grid:{color:"rgba(140,160,200,.08)"}}}}});
+}
+
+/* ================= RYTU VANI ================= */
+function renderRytu(){
+  const i = +document.getElementById("rytuDist").value, w = WX[i], dy = w.daily, c = w.current;
+  const rain5 = dy.precipitation_sum.slice(0,5).reduce((a,b)=>a+(b||0),0);
+  const probToday = dy.precipitation_probability_max[0]||0;
+  const gustToday = dy.wind_gusts_10m_max[0]||0;
+  const tmax = dy.temperature_2m_max[0], hum = c.relative_humidity_2m;
+  const prob3 = Math.max(...dy.precipitation_probability_max.slice(0,3));
+
+  document.getElementById("rytuAgg").innerHTML =
+    `<div class="a"><b>${rain5.toFixed(0)} mm</b><span>${bi("Rain next 5 days","5 రోజుల వర్షం")}</span></div>
+     <div class="a"><b>${probToday}%</b><span>${bi("Rain chance today","నేడు వర్ష అవకాశం")}</span></div>
+     <div class="a"><b>${Math.round(gustToday)} km/h</b><span>${bi("Wind gusts","గాలుల వేగం")}</span></div>
+     <div class="a"><b>${Math.round(tmax)}°C</b><span>${bi("Max temp","గరిష్ట ఉష్ణోగ్రత")}</span></div>
+     <div class="a"><b>${Math.round(hum)}%</b><span>${bi("Humidity","తేమ")}</span></div>`;
+
+  const sprayOK = probToday<30 && gustToday<25;
+  const ops = [
+    ["🧴", sprayOK
+      ? bi("<b>Spraying: GOOD ✅</b><span>Low rain chance & calm winds today — pesticide/fertilizer spray can be done.</span>","<b>మందు కొట్టడం: అనుకూలం ✅</b><span>నేడు వర్ష అవకాశం తక్కువ, గాలులు శాంతం — మిర్చి/పంటలకు మందు కొట్టవచ్చు.</span>")
+      : bi("<b>Spraying: AVOID ❌</b><span>Rain or strong winds expected — spray will wash off / drift. Wait for a clear window.</span>","<b>మందు కొట్టడం: వద్దు ❌</b><span>వర్షం లేదా బలమైన గాలుల అవకాశం — మందు కొట్టొద్దు, అనుకూల సమయం కోసం ఆగండి.</span>")],
+    ["🌾", rain5>=40
+      ? bi("<b>Sowing / Transplanting: FAVOURABLE ✅</b><span>Good rainfall expected (≥40mm in 5 days). Paddy transplanting (vari) conditions are good.</span>","<b>విత్తనం / నాట్లు: అనుకూలం ✅</b><span>మంచి వర్షాలు (5 రోజుల్లో ≥40mm). వరి నాట్లకు పరిస్థితులు అనుకూలం.</span>")
+      : rain5>=15
+      ? bi("<b>Sowing: MODERATE ⚠️</b><span>Some rain expected — sow only with assured irrigation backup.</span>","<b>విత్తనం: ఓ మోస్తరు ⚠️</b><span>కొంత వర్షం మాత్రమే — నీటి వసతి ఉంటేనే విత్తండి.</span>")
+      : bi("<b>Sowing: DELAY ❌</b><span>Very little rain in next 5 days — delay rain-fed sowing, plan irrigation.</span>","<b>విత్తనం: ఆలస్యం చేయండి ❌</b><span>వచ్చే 5 రోజుల్లో వర్షం చాలా తక్కువ — వర్షాధార విత్తనం వాయిదా వేయండి.</span>")],
+    ["🌻", prob3>=60
+      ? bi("<b>Harvesting: HURRY ⚠️</b><span>High rain chance in next 3 days — harvest mature crops early & move produce to covered storage.</span>","<b>కోత: త్వరపడండి ⚠️</b><span>3 రోజుల్లో వర్ష అవకాశం ఎక్కువ — పండిన పంటను ముందుగా కోసి, సురక్షిత గోదాముకు తరలించండి.</span>")
+      : bi("<b>Harvesting: SAFE ✅</b><span>Dry spell ahead — good window for harvesting and open-yard drying.</span>","<b>కోత: అనుకూలం ✅</b><span>పొడి వాతావరణం — కోత & ఆరబెట్టడానికి మంచి సమయం.</span>")],
+    ["💧", rain5<10
+      ? bi("<b>Irrigation: NEEDED</b><span>Almost no rain ahead — schedule irrigation; mulch to retain soil moisture.</span>","<b>నీటి తడి: అవసరం</b><span>వర్షం లేదు — తడులు ఇవ్వండి; నేల తేమ కోసం మల్చింగ్ చేయండి.</span>")
+      : bi("<b>Irrigation: HOLD</b><span>Expected rainfall should cover crop water needs — avoid over-watering.</span>","<b>నీటి తడి: ఆపండి</b><span>రాబోయే వర్షాలు సరిపోతాయి — అధిక తడులు వద్దు.</span>")]
+  ];
+  document.getElementById("rytuOps").innerHTML = ops.map(o=>`<div class="adv-item"><span class="e">${o[0]}</span><div>${o[1]}</div></div>`).join("");
+
+  const crop = [];
+  if(tmax>=40) crop.push(["🥵",bi("<b>Heat stress alert</b><span>Max temp ≥40°C — irrigate in evening, provide shade nets for vegetables & chilli nurseries.</span>","<b>వేడి ఒత్తిడి హెచ్చరిక</b><span>ఉష్ణోగ్రత ≥40°C — సాయంత్రం తడులు ఇవ్వండి, మిర్చి నారుమళ్లకు షేడ్ నెట్ వాడండి.</span>")]);
+  if(hum>=85 && tmax>=28) crop.push(["🍄",bi("<b>Fungus / pest watch (Mirchi, Paddy, Cotton)</b><span>High humidity — watch for blast, leaf spot & sucking pests. Scout fields daily.</span>","<b>తెగుళ్ల హెచ్చరిక (మిర్చి, వరి, పత్తి)</b><span>అధిక తేమ — అగ్గి తెగులు, ఆకుమచ్చ & రసం పీల్చే పురుగులను గమనించండి.</span>")]);
+  if(rain5>=80) crop.push(["🌊",bi("<b>Drainage alert</b><span>Heavy rain expected — clear field drains; protect harvested produce & fertilizer stock.</span>","<b>మురుగు నీటి హెచ్చరిక</b><span>భారీ వర్షాలు — కాలువలు శుభ్రం చేయండి; పంట & ఎరువులను కాపాడుకోండి.</span>")]);
+  if(gustToday>=40) crop.push(["🌬️",bi("<b>Wind alert for banana/papaya</b><span>Strong gusts — stake tall crops, delay drone/knapsack spraying.</span>","<b>అరటి/బొప్పాయికి గాలుల హెచ్చరిక</b><span>బలమైన గాలులు — ఊతలు ఇవ్వండి, స్ప్రేయింగ్ వాయిదా వేయండి.</span>")]);
+  if(!crop.length) crop.push(["✅",bi("<b>Normal conditions</b><span>No major weather stress for crops in this district. Continue routine operations.</span>","<b>సాధారణ పరిస్థితులు</b><span>ఈ జిల్లాలో పంటలకు పెద్ద ప్రమాదం లేదు. యథావిధిగా పనులు కొనసాగించండి.</span>")]);
+  crop.push(["📞",bi("<b>Kisan Call Centre: 1800-180-1551</b><span>For crop-specific advisories also see your local KVK / ANGRAU bulletins.</span>","<b>కిసాన్ కాల్ సెంటర్: 1800-180-1551</b><span>పంట వారీ సలహాల కోసం KVK / ANGRAU బులెటిన్లు చూడండి.</span>")]);
+  document.getElementById("rytuCrop").innerHTML = crop.map(o=>`<div class="adv-item"><span class="e">${o[0]}</span><div>${o[1]}</div></div>`).join("");
+}
+
+/* ================= MATSYAKARA VANI ================= */
+async function renderSea(){
+  const i = +document.getElementById("seaDist").value;
+  const w = WX[i], gust = w.daily.wind_gusts_10m_max[0]||0, wind = w.current.wind_speed_10m;
+  let wave = null, period = null;
+  try{ const m = await fetchMarine(i); wave = m.daily.wave_height_max[0]; period = m.current.wave_period; }catch(e){ console.warn("marine",e); }
+
+  const banner = document.getElementById("seaBanner");
+  const unsafe = (wave!==null && wave>2.5) || gust>45;
+  const caution = !unsafe && ((wave!==null && wave>1.5) || gust>35);
+  banner.className = "safe-banner "+(unsafe?"no":"ok");
+  document.getElementById("seaBannerIco").textContent = unsafe?"⛔":caution?"⚠️":"✅";
+  document.getElementById("seaBannerTxt").innerHTML = unsafe
+    ? bi("FISHING: NOT SAFE — do not venture into the sea. High waves / strong winds.","చేపల వేట: సురక్షితం కాదు — సముద్రంలోకి వెళ్లవద్దు. ఎత్తైన అలలు / బలమైన గాలులు.")
+    : caution
+    ? bi("FISHING: CAUTION — rough patches possible, stay close to shore & monitor INCOIS.","చేపల వేట: జాగ్రత్త — తీరానికి దగ్గరగా ఉండండి, INCOIS హెచ్చరికలు గమనించండి.")
+    : bi("FISHING: SAFE — sea conditions are normal along this coast today.","చేపల వేట: సురక్షితం — నేడు ఈ తీరంలో సముద్రం సాధారణంగా ఉంది.");
+
+  document.getElementById("seaAgg").innerHTML =
+    `<div class="a"><b>${wave!==null?wave.toFixed(1)+" m":"—"}</b><span>${bi("Max wave height","గరిష్ట అల ఎత్తు")}</span></div>
+     <div class="a"><b>${period!==null?period.toFixed(0)+" s":"—"}</b><span>${bi("Wave period","అల వ్యవధి")}</span></div>
+     <div class="a"><b>${Math.round(wind)} km/h</b><span>${bi("Coastal wind","తీర గాలి")}</span></div>
+     <div class="a"><b>${Math.round(gust)} km/h</b><span>${bi("Max gusts","గరిష్ట గాలులు")}</span></div>`;
+
+  const adv = [];
+  if(unsafe) adv.push(["⛔",bi("<b>Do not venture</b><span>Waves above 2.5m or gusts above 45 km/h — boats should return to harbour.</span>","<b>వేటకు వెళ్లవద్దు</b><span>అలలు 2.5m పైన లేదా గాలులు 45 km/h పైన — పడవలు తీరానికి తిరిగి రావాలి.</span>")]);
+  else if(caution) adv.push(["⚠️",bi("<b>Stay near shore</b><span>Moderate swell — small boats avoid deep-sea trips; carry life jackets & GPS.</span>","<b>తీరానికి దగ్గరగా ఉండండి</b><span>మోస్తరు అలలు — చిన్న పడవలు లోతు సముద్రానికి వెళ్లొద్దు; లైఫ్ జాకెట్లు తప్పనిసరి.</span>")]);
+  else adv.push(["✅",bi("<b>Normal sea</b><span>Conditions fine for fishing. Still carry life jackets, DAT/transponder & check wind before return trip.</span>","<b>సాధారణ సముద్రం</b><span>వేటకు అనుకూలం. లైఫ్ జాకెట్లు, ట్రాన్స్‌పాండర్ తీసుకెళ్లండి.</span>")]);
+  adv.push(["🌀",bi("<b>Low-pressure watch</b><span>Check the Windy map for circulations over the Bay of Bengal. During cyclone alerts, IMD/INCOIS warnings override everything here.</span>","<b>అల్పపీడన పరిశీలన</b><span>బంగాళాఖాతంలో ఆవర్తనాల కోసం Windy మ్యాప్ చూడండి. తుఫాను హెచ్చరికల సమయంలో IMD/INCOIS హెచ్చరికలే అంతిమం.</span>")]);
+  adv.push(["📻",bi("<b>Emergency: 1093 / Coast Guard 1554</b><span>Toll-free marine emergency & search-rescue numbers.</span>","<b>అత్యవసరం: 1093 / కోస్ట్ గార్డ్ 1554</b><span>సముద్ర అత్యవసర సహాయ నంబర్లు.</span>")]);
+  document.getElementById("seaAdv").innerHTML = adv.map(o=>`<div class="adv-item"><span class="e">${o[0]}</span><div>${o[1]}</div></div>`).join("");
+}
+
+/* ================= ALERTS + TICKER ================= */
+function renderAlerts(){
+  const alerts = [];
+  WX.forEach((w,i)=>{
+    const n = DISTRICTS[i][0], nte = DISTRICTS[i][1], dy = w.daily, c = w.current;
+    const feels = c.apparent_temperature, code = c.weather_code;
+    if(feels>=45) alerts.push(["dang","🥵",`<b>${n}:</b> ${bi(`Extreme heat — real-feel ${Math.round(feels)}°C. Avoid 12–4pm sun.`,`తీవ్ర వేడి — రియల్-ఫీల్ ${Math.round(feels)}°C (${nte}). మధ్యాహ్నం ఎండలో వెళ్లొద్దు.`)}`]);
+    else if(dy.temperature_2m_max[0]>=42) alerts.push(["warn","☀️",`<b>${n}:</b> ${bi(`Heatwave-like: max ${Math.round(dy.temperature_2m_max[0])}°C today.`,`వడగాలి: నేడు గరిష్టం ${Math.round(dy.temperature_2m_max[0])}°C (${nte}).`)}`]);
+    if(code>=95) alerts.push(["dang","⛈️",`<b>${n}:</b> ${bi("Thunderstorm active now — stay indoors, unplug electronics.",`ఇప్పుడు ఉరుములతో వర్షం (${nte}) — ఇంట్లోనే ఉండండి.`)}`]);
+    else if((dy.precipitation_probability_max[0]||0)>=80 && (dy.precipitation_sum[0]||0)>=15) alerts.push(["warn","🌧️",`<b>${n}:</b> ${bi(`Heavy rain likely today (${dy.precipitation_probability_max[0]}%, ~${dy.precipitation_sum[0].toFixed(0)}mm).`,`నేడు భారీ వర్షం అవకాశం (${nte}) — ${dy.precipitation_probability_max[0]}%.`)}`]);
+    if((dy.wind_gusts_10m_max[0]||0)>=55) alerts.push(["warn","🌬️",`<b>${n}:</b> ${bi(`Squally winds up to ${Math.round(dy.wind_gusts_10m_max[0])} km/h.`,`బలమైన గాలులు ${Math.round(dy.wind_gusts_10m_max[0])} km/h వరకు (${nte}).`)}`]);
+  });
+  const list = document.getElementById("alert-list");
+  list.innerHTML = alerts.length
+    ? alerts.slice(0,8).map(a=>`<div class="al ${a[0]}"><span class="e">${a[1]}</span><div>${a[2]}</div></div>`).join("")
+    : `<div class="al ok"><span class="e">✅</span><div>${bi("No severe weather alerts across AP right now. Pleasant day!","ప్రస్తుతం AP అంతటా తీవ్ర హెచ్చరికలు లేవు. మంచి రోజు!")}</div></div>`;
+
+  const tick = alerts.length
+    ? alerts.map(a=>a[1]+" "+a[2].replace(/<[^>]+>/g," ")).join(" &nbsp;·&nbsp; ")
+    : "✅ No severe alerts across Andhra Pradesh · అన్ని జిల్లాల్లో సాధారణ వాతావరణం · Follow @srikakulam_weatherman for live updates";
+  document.getElementById("tickerIn").innerHTML = `<span>${tick}</span><span>${tick}</span>`;
+}
+
+/* ================= MASTER REFRESH ================= */
+async function refresh(){
+  try{
+    await fetchAll();
+    renderHero(); renderGrid(); renderMap(); renderForecast(); renderRytu(); renderAlerts(); renderSea();
+    document.getElementById("lastRefresh").textContent = new Date().toLocaleTimeString("en-IN",{hour:'2-digit',minute:'2-digit'});
+  }catch(e){
+    console.error(e);
+    document.getElementById("nowDesc").innerHTML = bi("⚠️ Could not load live data — check connection & retry.","⚠️ లైవ్ డేటా లోడ్ కాలేదు — కనెక్షన్ చూసి మళ్లీ ప్రయత్నించండి.");
+  }
+}
+
+/* ================= UI: clock / theme / lang / reveal ================= */
+setInterval(()=>{ document.getElementById("clock").textContent =
+  new Date().toLocaleTimeString("en-IN",{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true})+" IST"; },1000);
+
+const themeTgl = document.getElementById("themeTgl");
+function setTheme(t){ document.documentElement.dataset.theme=t; themeTgl.textContent = t==="light"?"☀️":"🌙"; try{localStorage.setItem("swm-theme",t)}catch(e){} }
+themeTgl.onclick = ()=> setTheme(document.documentElement.dataset.theme==="light"?"dark":"light");
+try{ setTheme(localStorage.getItem("swm-theme")||"dark"); }catch(e){ setTheme("dark"); }
+
+const langTgl = document.getElementById("langTgl");
+function setLang(l){ document.body.classList.toggle("te", l==="te"); document.documentElement.lang = l==="te"?"te":"en"; try{localStorage.setItem("swm-lang",l)}catch(e){} }
+langTgl.onclick = ()=> setLang(document.body.classList.contains("te")?"en":"te");
+try{ setLang(localStorage.getItem("swm-lang")||"en"); }catch(e){}
+
+const io = new IntersectionObserver(es=>es.forEach(e=>e.isIntersecting&&e.target.classList.add("in")),{threshold:.08});
+document.querySelectorAll("section .wrap > *").forEach(el=>{ el.classList.add("reveal"); io.observe(el); });
+
+document.getElementById("fcDist").addEventListener("change",renderForecast);
+document.getElementById("rytuDist").addEventListener("change",renderRytu);
+document.getElementById("seaDist").addEventListener("change",renderSea);
+
+/* ================= THREE.JS HERO ================= */
+(function(){
+  if(!window.THREE) return;
+  const box = document.getElementById("three-bg");
+  const scene = new THREE.Scene();
+  const cam = new THREE.PerspectiveCamera(60, box.clientWidth/box.clientHeight, .1, 100);
+  cam.position.z = 7;
+  const ren = new THREE.WebGLRenderer({alpha:true, antialias:true});
+  ren.setSize(box.clientWidth, box.clientHeight);
+  ren.setPixelRatio(Math.min(devicePixelRatio,2));
+  box.appendChild(ren.domElement);
+
+  /* dotted globe */
+  const globe = new THREE.Group();
+  const gGeo = new THREE.SphereGeometry(2.6, 40, 40);
+  const pts = new THREE.Points(gGeo, new THREE.PointsMaterial({color:0x185ADB, size:.035, transparent:true, opacity:.85}));
+  globe.add(pts);
+  globe.add(new THREE.Mesh(gGeo, new THREE.MeshBasicMaterial({color:0x0A1931, transparent:true, opacity:.35})));
+  /* AP marker */
+  const marker = new THREE.Mesh(new THREE.SphereGeometry(.09,16,16), new THREE.MeshBasicMaterial({color:0x00C9FF}));
+  const lat=16.5*Math.PI/180, lon=80.6*Math.PI/180;
+  marker.position.set(2.62*Math.cos(lat)*Math.sin(lon), 2.62*Math.sin(lat), 2.62*Math.cos(lat)*Math.cos(lon));
+  globe.add(marker);
+  const ring = new THREE.Mesh(new THREE.RingGeometry(.14,.2,32), new THREE.MeshBasicMaterial({color:0x00C9FF,side:THREE.DoubleSide,transparent:true,opacity:.7}));
+  ring.position.copy(marker.position); ring.lookAt(0,0,0);
+  globe.add(ring);
+  globe.position.x = 2.2; globe.rotation.y = -.9;
+  scene.add(globe);
+
+  /* clouds (sprites from canvas) */
+  const cv = document.createElement("canvas"); cv.width=cv.height=128;
+  const cx = cv.getContext("2d");
+  const grd = cx.createRadialGradient(64,64,8,64,64,60);
+  grd.addColorStop(0,"rgba(255,255,255,.9)"); grd.addColorStop(1,"rgba(255,255,255,0)");
+  cx.fillStyle=grd; cx.fillRect(0,0,128,128);
+  const cTex = new THREE.CanvasTexture(cv);
+  const clouds = [];
+  for(let i=0;i<14;i++){
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({map:cTex, transparent:true, opacity:.16+Math.random()*.2, color:0x9fd8ff}));
+    s.scale.setScalar(1.2+Math.random()*2.6);
+    s.position.set((Math.random()-0.5)*14, (Math.random()-0.5)*7, (Math.random()-0.5)*3-1);
+    s.userData.v = .0015+Math.random()*.003;
+    scene.add(s); clouds.push(s);
+  }
+
+  /* rain particles */
+  const rN = 900, rPos = new Float32Array(rN*3);
+  for(let i=0;i<rN;i++){ rPos[i*3]=(Math.random()-.5)*16; rPos[i*3+1]=Math.random()*10-5; rPos[i*3+2]=(Math.random()-.5)*4-1; }
+  const rGeo = new THREE.BufferGeometry();
+  rGeo.setAttribute("position", new THREE.BufferAttribute(rPos,3));
+  const rain = new THREE.Points(rGeo, new THREE.PointsMaterial({color:0x00C9FF, size:.03, transparent:true, opacity:.55}));
+  scene.add(rain);
+
+  /* lightning flash on hover */
+  const flash = new THREE.PointLight(0xaaddff, 0, 30);
+  flash.position.set(0,3,2); scene.add(flash);
+  let flashT = 0;
+  document.getElementById("hero").addEventListener("pointermove", ()=>{ if(Math.random()<.006) flashT = 1; });
+
+  let mx=0,my=0;
+  addEventListener("pointermove",e=>{ mx=(e.clientX/innerWidth-.5); my=(e.clientY/innerHeight-.5); });
+  addEventListener("resize",()=>{ cam.aspect=box.clientWidth/box.clientHeight; cam.updateProjectionMatrix(); ren.setSize(box.clientWidth,box.clientHeight); });
+
+  (function loop(){
+    requestAnimationFrame(loop);
+    globe.rotation.y += .0016;
+    clouds.forEach(s=>{ s.position.x += s.userData.v; if(s.position.x>8) s.position.x=-8; });
+    const p = rGeo.attributes.position.array;
+    for(let i=0;i<rN;i++){ p[i*3+1]-=.045; if(p[i*3+1]<-5) p[i*3+1]=5; }
+    rGeo.attributes.position.needsUpdate = true;
+    if(flashT>0){ flash.intensity = flashT*6; flashT-=.06; } else flash.intensity = 0;
+    cam.position.x += (mx*.8-cam.position.x)*.04;
+    cam.position.y += (-my*.5-cam.position.y)*.04;
+    cam.lookAt(1,0,0);
+    ren.render(scene,cam);
+  })();
+})();
+
+/* ================= PWA ================= */
+if("serviceWorker" in navigator && location.protocol.startsWith("http")){
+  addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+}
+
+/* ================= BOOT (v1.0) ================= */
+fillSelects(); refresh(); fetchAqi();
+setInterval(refresh, 10*60*1000);      // auto-refresh every 10 minutes
+setInterval(fetchAqi, 30*60*1000);
+</script>
+
 </body>
 </html>

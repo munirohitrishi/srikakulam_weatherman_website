@@ -1,23 +1,29 @@
-# Srikakulam Weatherman
+# Srikakulam Weatherman — Live AP Weather Hub
 
-Static, bilingual weather dashboard for Srikakulam District. It uses Open-Meteo as the real-time primary source, with local caching and an automatic demo-data fallback so the page remains useful when a provider is unreachable.
+Single-file live weather site (`index.html`) for all **26 districts of Andhra Pradesh**, built for [@srikakulam_weatherman](https://www.instagram.com/srikakulam_weatherman). Bilingual (Telugu / English), dark + light mode, glassmorphism UI, Three.js animated hero, PWA installable.
 
-## Deploy on Netlify
+> The previous single-district version is preserved as `index-old.html` (with its `parts/` and `netlify/` folders).
 
-1. Push this folder to a new GitHub repository.
-2. In Netlify, choose **Add new site → Import an existing project**, select the repository, and deploy. No build command or publish directory is needed: the repository root is the site.
-3. To enable optional AQI, WeatherAPI alerts, and Tomorrow.io enrichment, add these Netlify environment variables, then redeploy:
-   - `WEATHERAPI_KEY`
-   - `TOMORROW_API_KEY`
+## Sections
 
-Never put API keys in `index.html`, `parts/weather.js`, or your GitHub repository. The Netlify function keeps optional keys on the server. Open-Meteo and RainViewer need no key and work immediately.
+- **Hero** — animated 3D globe with clouds, rain & lightning; live Srikakulam conditions, AQI, sunrise/sunset, real-time IST clock.
+- **AP Districts Live Grid** — 26 district cards + interactive stylised SVG map; click any district for current conditions and a 5-day forecast. Auto-refreshes every 10 minutes.
+- **8-Day Advanced Forecast** — horizontal timeline (max/min, rain %, gusts, rainfall) + Chart.js temperature trend, per district.
+- **Rytu Vani (Farmers)** — weather-based advisories: spraying, sowing/transplanting, harvesting, irrigation, heat/pest alerts. Telugu + English.
+- **Matsyakara Vani (Fishermen)** — wave height/period from Open-Meteo Marine, SAFE / CAUTION / NOT SAFE banner, Windy Bay of Bengal cyclone tracker, INCOIS/IMD links.
+- **Live Alerts & Radar** — auto-generated heatwave/thunderstorm/heavy-rain/squall banners scanning all 26 districts, alert ticker, Windy radar embed.
+- **Instagram** — official profile embed + follow CTA.
 
-## Data behaviour
+## Data sources
 
-- Current conditions and seven-day forecast: Open-Meteo, refreshed every ten minutes.
-- Radar: RainViewer frames, animated on the live map when available.
-- Optional provider calls: WeatherAPI (AQI and alerts) and Tomorrow.io (forecast enrichment), via `/.netlify/functions/weather-enrichment`.
-- Cache: last successful data is stored for five minutes; a saved reading is shown while a refresh is in progress.
-- If all live calls fail, the existing clearly labelled demo display remains available.
+- **Default (no key needed):** Open-Meteo forecast, marine and air-quality APIs — the site is fully live out of the box.
+- **OpenWeatherMap (optional):** paste your key in `index.html` at `const OWM_KEY = "YOUR_OPENWEATHER_API_KEY"`. When set, hero current conditions come from OpenWeatherMap. Note: the key is visible client-side; restrict it by domain in your OWM dashboard, or proxy via a Netlify function.
+- Official warnings: always refer [IMD](https://mausam.imd.gov.in/) and [INCOIS](https://incois.gov.in/) — advisories on this site are auto-generated from forecast models and indicative only.
 
-Official India Meteorological Department bulletins should be checked at [IMD Mausam](https://mausam.imd.gov.in/) before acting on cyclone or marine risk. Its public warning widget is not a stable browser API, so it is intentionally not scraped from the deployed client.
+## Deploy
+
+Any static host works (Netlify, GitHub Pages, Vercel). Files needed: `index.html`, `manifest.json`, `sw.js`. The service worker enables offline shell caching and PWA install (HTTPS required).
+
+## Instagram Graph API (later)
+
+Live post pulling requires a Facebook developer app + access token owned by the creator. The embed-based section works without any token; swap it for Graph API calls when a token is available.
