@@ -4,207 +4,365 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Srikakulam Weatherman — Live AP Weather Hub</title>
-<meta name="description" content="Live weather for all 26 districts of Andhra Pradesh. Farmers advisory (Rytu Vani), fishermen safety (Matsyakara Vani), radar & alerts. By @srikakulam_weatherman">
+<meta name="description" content="Live weather for all 26 districts of Andhra Pradesh. Cyclone bulletin, Rytu Vani, Matsyakara Vani, Jala Vani dam tracker, Vidyut Vani outage risk. By @srikakulam_weatherman">
 <meta name="theme-color" content="#0A1931">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛈️</text></svg>">
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=Noto+Sans+Telugu:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&family=Noto+Sans+Telugu:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
+/* ============================================================
+   SRIKAKULAM WEATHERMAN v2 — Material You / Google-Weather style
+   Weather-aware dynamic themes:
+   body.theme-sunny | .theme-cloudy | .theme-rainy | .theme-thunder | .theme-night
+   ============================================================ */
 :root{
   --navy:#0A1931; --bay:#185ADB; --cyan:#00C9FF; --yellow:#FFC300;
-  --bg:#060e21; --bg2:#0A1931; --card:rgba(255,255,255,.06); --card-brd:rgba(255,255,255,.12);
-  --txt:#f2f6ff; --txt2:#9fb3d1; --glass-blur:18px;
-  --safe:#22c55e; --danger:#ef4444;
-  --shadow:0 8px 32px rgba(0,0,0,.35);
-}
-[data-theme="light"]{
-  --bg:#e8f0fb; --bg2:#dbe7f7; --card:rgba(255,255,255,.65); --card-brd:rgba(10,25,49,.08);
-  --txt:#0A1931; --txt2:#44557a; --shadow:0 8px 32px rgba(24,90,219,.12);
+  --card:rgba(255,255,255,.09); --card-brd:rgba(255,255,255,.16);
+  --txt:#f4f8ff; --txt2:#c2d2ea; --glass-blur:20px;
+  --safe:#22c55e; --danger:#ff4d4d; --warn:#FFC300;
+  --shadow:0 10px 40px rgba(0,10,30,.35);
+  --r-lg:28px; --r-md:20px; --r-sm:14px;
+  --accent:var(--cyan);
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{
-  font-family:'Inter','Noto Sans Telugu',sans-serif; background:var(--bg); color:var(--txt);
-  background-image:radial-gradient(ellipse at 20% -10%, rgba(24,90,219,.25), transparent 55%),
-                   radial-gradient(ellipse at 90% 10%, rgba(0,201,255,.12), transparent 50%);
-  background-attachment:fixed; overflow-x:hidden; transition:background .4s,color .4s;
+  font-family:'Inter','Noto Sans Telugu',sans-serif; color:var(--txt);
+  min-height:100vh; overflow-x:hidden; transition:background 1.2s ease,color .4s;
+  background:linear-gradient(170deg,#03060f 0%,#0A1931 55%,#153060 100%);
+  background-attachment:fixed;
 }
+/* ---- dynamic weather themes (dark base) ---- */
+/* Sunny = bright cheerful sky: light cyan → soft pastel blue, dark text for contrast */
+body.theme-sunny  {background:linear-gradient(180deg,#8ee3f8 0%,#7cc3f5 45%,#a8c4ef 100%);background-attachment:fixed;
+  --txt:#0A1931;--txt2:#31527d;--card:rgba(255,255,255,.52);--card-brd:rgba(255,255,255,.7);
+  --shadow:0 12px 36px rgba(50,110,190,.22)}
+body.theme-sunny .al.warn{color:#8a6500}
+body.theme-sunny .al.dang{color:#b41414}
+body.theme-sunny .al.ok{color:#0c7a3d}
+body.theme-sunny .rchip.hi{color:#b41414}
+body.theme-sunny .rchip.md{color:#8a6500}
+body.theme-sunny .dam-status.ok{color:#0c7a3d}
+body.theme-sunny .dam-status.fill{color:#8a6500}
+body.theme-sunny .dam-status.danger{color:#b41414}
+body.theme-sunny .safe-banner.ok{color:#0c7a3d}
+body.theme-sunny .safe-banner.no{color:#b41414}
+body.theme-sunny .em a{color:#c81e1e}
+body.theme-sunny .nstat,body.theme-sunny .dd-day,body.theme-sunny .em,body.theme-sunny .dam-nums .n{background:rgba(255,255,255,.55)}
+body.theme-sunny footer{background:rgba(255,255,255,.45)}
+body.theme-cloudy {background:linear-gradient(170deg,#2c3a52 0%,#46586f 55%,#6b7f94 100%);background-attachment:fixed}
+body.theme-rainy  {background:linear-gradient(170deg,#0c1c33 0%,#16324f 55%,#265a7a 100%);background-attachment:fixed}
+body.theme-thunder{background:linear-gradient(170deg,#0a0817 0%,#1d1535 55%,#332457 100%);background-attachment:fixed}
+body.theme-night  {background:linear-gradient(170deg,#03060f 0%,#0A1931 55%,#153060 100%);background-attachment:fixed}
+/* ---- light mode pastels ---- */
+html[data-theme="light"] body{--card:rgba(255,255,255,.62);--card-brd:rgba(10,25,49,.1);--txt:#0A1931;--txt2:#44557a;--shadow:0 10px 36px rgba(24,90,219,.16)}
+html[data-theme="light"] body.theme-sunny  {background:linear-gradient(170deg,#6fbcff 0%,#b7e0ff 55%,#fff3cf 100%)}
+html[data-theme="light"] body.theme-cloudy {background:linear-gradient(170deg,#aebbcb 0%,#d7e0ea 60%,#f2f5f9 100%)}
+html[data-theme="light"] body.theme-rainy  {background:linear-gradient(170deg,#8fb4d6 0%,#c3dcf1 60%,#e8f2fb 100%)}
+html[data-theme="light"] body.theme-thunder{background:linear-gradient(170deg,#9d97c4 0%,#cfc9e8 60%,#efecf9 100%)}
+html[data-theme="light"] body.theme-night  {background:linear-gradient(170deg,#7f95c4 0%,#b9c8e8 60%,#e6ecf9 100%)}
+
 h1,h2,h3,h4{font-family:'Poppins','Noto Sans Telugu',sans-serif}
 body:not(.te) .te{display:none!important}
 body.te .en{display:none!important}
 body.te{font-family:'Noto Sans Telugu','Inter',sans-serif}
 .wrap{max-width:1200px;margin:0 auto;padding:0 20px}
 .glass{
-  background:var(--card); border:1px solid var(--card-brd); border-radius:20px;
+  background:var(--card); border:1px solid var(--card-brd); border-radius:var(--r-lg);
   backdrop-filter:blur(var(--glass-blur)); -webkit-backdrop-filter:blur(var(--glass-blur));
   box-shadow:var(--shadow);
 }
-.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;font-size:.75rem;font-weight:600;background:rgba(0,201,255,.12);color:var(--cyan);border:1px solid rgba(0,201,255,.25)}
-section{padding:70px 0;position:relative}
-.sec-title{font-size:clamp(1.5rem,3.5vw,2.2rem);font-weight:700;margin-bottom:8px}
-.sec-sub{color:var(--txt2);margin-bottom:30px;font-size:.95rem}
-.grad-txt{background:linear-gradient(90deg,var(--cyan),var(--bay));-webkit-background-clip:text;background-clip:text;color:transparent}
-
-/* ---------- Header ---------- */
-header{position:fixed;top:0;left:0;right:0;z-index:100;transition:.3s}
-header .bar{display:flex;align-items:center;gap:14px;margin:12px auto;max-width:1200px;padding:10px 18px;border-radius:16px}
-.logo{display:flex;align-items:center;gap:10px;font-family:'Poppins',sans-serif;font-weight:700;font-size:1rem;line-height:1.1;text-decoration:none;color:var(--txt)}
-.logo .ic{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--bay),var(--cyan));display:grid;place-items:center;font-size:1.3rem;flex:none;box-shadow:0 4px 14px rgba(0,201,255,.4)}
-.logo small{display:block;font-size:.62rem;font-weight:500;color:var(--txt2)}
-nav{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap}
-nav a{color:var(--txt2);text-decoration:none;font-size:.8rem;font-weight:600;padding:7px 11px;border-radius:10px;transition:.2s}
-nav a:hover{color:var(--cyan);background:rgba(0,201,255,.08)}
-.hbtns{display:flex;gap:8px;margin-left:8px}
-.tgl{cursor:pointer;border:1px solid var(--card-brd);background:var(--card);color:var(--txt);border-radius:10px;padding:7px 12px;font-size:.78rem;font-weight:700;font-family:inherit;transition:.2s}
-.tgl:hover{border-color:var(--cyan);color:var(--cyan)}
-#clock{font-variant-numeric:tabular-nums;font-weight:600;font-size:.8rem;color:var(--cyan);white-space:nowrap}
-@media(max-width:900px){nav{display:none}}
-
-/* ---------- Ticker ---------- */
-.ticker{position:relative;z-index:5;overflow:hidden;border-top:1px solid var(--card-brd);border-bottom:1px solid var(--card-brd);background:rgba(255,195,0,.07)}
-.ticker-in{display:flex;gap:60px;white-space:nowrap;padding:9px 0;animation:tick 40s linear infinite;font-size:.85rem;font-weight:600;color:var(--yellow)}
-@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-
-/* ---------- Hero ---------- */
-#hero{min-height:100vh;display:flex;align-items:center;padding:130px 0 60px;position:relative}
-#three-bg{position:absolute;inset:0;z-index:0}
-#three-bg canvas{display:block}
-.hero-grid{position:relative;z-index:2;display:grid;grid-template-columns:1.2fr .9fr;gap:34px;align-items:center;width:100%}
-@media(max-width:920px){.hero-grid{grid-template-columns:1fr}}
-.hero-left h1{font-size:clamp(1.9rem,4.6vw,3.3rem);font-weight:800;line-height:1.12;margin:14px 0}
-.hero-left p.lead{color:var(--txt2);font-size:1.02rem;max-width:520px;margin-bottom:22px}
-.hero-cta{display:flex;gap:12px;flex-wrap:wrap}
-.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 22px;border-radius:14px;font-weight:700;font-size:.9rem;text-decoration:none;transition:.25s;border:none;cursor:pointer;font-family:inherit}
-.btn-p{background:linear-gradient(135deg,var(--bay),var(--cyan));color:#fff;box-shadow:0 8px 24px rgba(24,90,219,.45)}
-.btn-p:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(0,201,255,.5)}
-.btn-o{border:1px solid var(--card-brd);background:var(--card);color:var(--txt)}
-.btn-o:hover{border-color:var(--cyan);color:var(--cyan)}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:999px;font-size:.75rem;font-weight:700;background:rgba(255,255,255,.14);color:var(--txt);border:1px solid var(--card-brd)}
+section{padding:64px 0;position:relative}
+.sec-title{font-size:clamp(1.5rem,3.5vw,2.3rem);font-weight:800;margin-bottom:8px;letter-spacing:-.5px}
+.sec-sub{color:var(--txt2);margin-bottom:28px;font-size:.95rem;max-width:720px}
+.sec-head{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px}
+.grad-txt{background:linear-gradient(90deg,#ffd76e,#ffb300);-webkit-background-clip:text;background-clip:text;color:transparent}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 24px;border-radius:999px;font-weight:700;font-size:.9rem;text-decoration:none;transition:.25s;border:none;cursor:pointer;font-family:inherit}
+.btn-p{background:linear-gradient(135deg,#185ADB,#00C9FF);color:#fff;box-shadow:0 10px 26px rgba(0,90,200,.45)}
+.btn-p:hover{transform:translateY(-2px);box-shadow:0 14px 32px rgba(0,150,255,.5)}
+.btn-o{border:1.5px solid var(--card-brd);background:var(--card);color:var(--txt);backdrop-filter:blur(10px)}
+.btn-o:hover{border-color:var(--txt);transform:translateY(-1px)}
 .live-dot{width:8px;height:8px;border-radius:50%;background:var(--safe);animation:pulse 1.6s infinite}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(34,197,94,.6)}70%{box-shadow:0 0 0 9px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
-
-.now-card{padding:26px;position:relative;overflow:hidden}
-.now-card::after{content:"";position:absolute;top:-60px;right:-60px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(0,201,255,.28),transparent 70%)}
-.now-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
-.now-city{font-weight:700;font-size:1.05rem}
-.now-city small{display:block;color:var(--txt2);font-weight:500;font-size:.72rem;margin-top:2px}
-.now-main{display:flex;align-items:center;gap:16px;margin:14px 0 6px}
-.now-temp{font-size:4.2rem;font-weight:800;font-family:'Poppins',sans-serif;line-height:1}
-.now-temp sup{font-size:1.6rem;color:var(--cyan)}
-.now-ico{font-size:3.4rem;filter:drop-shadow(0 6px 14px rgba(0,201,255,.35))}
-.now-desc{color:var(--txt2);font-weight:600;margin-bottom:16px}
-.now-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.nstat{background:rgba(255,255,255,.05);border:1px solid var(--card-brd);border-radius:14px;padding:10px;text-align:center}
-[data-theme="light"] .nstat{background:rgba(255,255,255,.5)}
-.nstat b{display:block;font-size:.95rem}
-.nstat span{font-size:.65rem;color:var(--txt2);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
-
-/* ---------- Districts ---------- */
-.dist-layout{display:grid;grid-template-columns:340px 1fr;gap:26px;align-items:start}
-@media(max-width:920px){.dist-layout{grid-template-columns:1fr}}
-.map-card{padding:18px;position:sticky;top:100px}
-.map-card svg{width:100%;height:auto}
-.map-dot{cursor:pointer;transition:.2s}
-.map-dot circle.c{fill:var(--cyan);stroke:rgba(0,201,255,.35);stroke-width:6;transition:.2s}
-.map-dot:hover circle.c,.map-dot.sel circle.c{fill:var(--yellow);stroke:rgba(255,195,0,.35)}
-.map-dot text{fill:var(--txt2);font-size:8.5px;font-weight:600;pointer-events:none}
-.ap-shape{fill:rgba(24,90,219,.16);stroke:var(--bay);stroke-width:1.6;stroke-linejoin:round}
-.dist-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
-.dcard{padding:14px;cursor:pointer;transition:.25s;position:relative}
-.dcard:hover{transform:translateY(-4px);border-color:var(--cyan)}
-.dcard.sel{border-color:var(--yellow);box-shadow:0 0 0 1px var(--yellow),var(--shadow)}
-.dcard h4{font-size:.8rem;font-weight:700;margin-bottom:6px;line-height:1.25}
-.dcard .dtemp{font-size:1.55rem;font-weight:800;font-family:'Poppins',sans-serif}
-.dcard .dico{position:absolute;top:12px;right:12px;font-size:1.5rem}
-.dcard .dmeta{margin-top:6px;font-size:.68rem;color:var(--txt2);display:flex;gap:8px;flex-wrap:wrap;font-weight:600}
-.skel{animation:skel 1.4s infinite;background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);background-size:200% 100%}
+select.sel-dist{background:var(--card);border:1px solid var(--card-brd);color:var(--txt);border-radius:999px;padding:10px 18px;font-family:inherit;font-weight:700;font-size:.85rem;cursor:pointer;backdrop-filter:blur(10px)}
+select.sel-dist option{background:#0A1931;color:#fff}
+.skel{animation:skel 1.4s infinite;background:linear-gradient(90deg,transparent,rgba(255,255,255,.1),transparent);background-size:200% 100%}
 @keyframes skel{from{background-position:200% 0}to{background-position:-200% 0}}
+.reveal{opacity:0;transform:translateY(26px);transition:opacity .7s,transform .7s}
+.reveal.in{opacity:1;transform:none}
 
-/* ---------- District detail ---------- */
-#dist-detail{margin-top:26px;padding:24px;display:none}
+/* ================= HEADER ================= */
+header{position:fixed;top:0;left:0;right:0;z-index:100}
+header .bar{display:flex;align-items:center;gap:14px;margin:12px auto;max-width:1200px;padding:10px 18px;border-radius:999px}
+.logo{display:flex;align-items:center;gap:10px;font-family:'Poppins',sans-serif;font-weight:800;font-size:.98rem;line-height:1.1;text-decoration:none;color:var(--txt)}
+.logo .ic{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#185ADB,#00C9FF);display:grid;place-items:center;font-size:1.3rem;flex:none;box-shadow:0 4px 16px rgba(0,160,255,.5)}
+.logo small{display:block;font-size:.6rem;font-weight:600;color:var(--txt2)}
+nav{display:flex;gap:2px;margin-left:auto;flex-wrap:wrap}
+nav a{color:var(--txt2);text-decoration:none;font-size:.76rem;font-weight:700;padding:7px 10px;border-radius:999px;transition:.2s}
+nav a:hover{color:var(--txt);background:rgba(255,255,255,.12)}
+.hbtns{display:flex;gap:8px;margin-left:6px}
+.tgl{cursor:pointer;border:1px solid var(--card-brd);background:var(--card);color:var(--txt);border-radius:999px;padding:8px 13px;font-size:.78rem;font-weight:800;font-family:inherit;transition:.2s;backdrop-filter:blur(10px)}
+.tgl:hover{border-color:var(--txt)}
+#clock{font-variant-numeric:tabular-nums;font-weight:700;font-size:.78rem;color:var(--txt);white-space:nowrap;opacity:.9}
+@media(max-width:1020px){nav{display:none}}
+
+/* ================= CYCLONE TICKER (persistent) ================= */
+#cycTicker{position:fixed;top:76px;left:0;right:0;z-index:99;overflow:hidden;cursor:pointer;
+  background:linear-gradient(90deg,rgba(160,10,20,.92),rgba(220,40,40,.92));border-block:1px solid rgba(255,120,120,.5);
+  backdrop-filter:blur(8px)}
+#cycTicker.calm{background:linear-gradient(90deg,rgba(8,90,60,.9),rgba(14,130,90,.9));border-color:rgba(120,255,190,.35)}
+#cycTicker .in{display:flex;gap:70px;white-space:nowrap;padding:8px 0;animation:tick 35s linear infinite;font-size:.84rem;font-weight:800;color:#fff}
+#cycTicker.flash .in{animation:tick 35s linear infinite, tflash 1.4s ease-in-out infinite}
+@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes tflash{50%{opacity:.55}}
+
+/* ================= WEATHER SCENE (illustrations) ================= */
+#scene{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.sun{position:absolute;top:9%;right:12%;width:150px;height:150px;border-radius:50%;
+  background:radial-gradient(circle,#fff6c8 0%,#ffd54d 45%,rgba(255,190,40,.25) 70%,transparent 72%);
+  box-shadow:0 0 90px 40px rgba(255,200,60,.45);animation:sunPulse 5s ease-in-out infinite;display:none}
+@keyframes sunPulse{50%{transform:scale(1.07);box-shadow:0 0 120px 60px rgba(255,200,60,.55)}}
+body.theme-sunny .sun{display:block}
+.moon{position:absolute;top:9%;right:14%;width:110px;height:110px;border-radius:50%;display:none;
+  background:radial-gradient(circle at 62% 40%,#fdfdf4 0%,#e8ecdf 55%,#cfd6c8 100%);
+  box-shadow:0 0 60px 18px rgba(220,235,255,.35), inset -16px 10px 0 6px rgba(160,175,190,.35)}
+body.theme-night .moon{display:block}
+.stars{position:absolute;inset:0;display:none}
+body.theme-night .stars{display:block}
+.stars span{position:absolute;width:2px;height:2px;border-radius:50%;background:#fff;animation:tw 3s infinite}
+@keyframes tw{50%{opacity:.15;transform:scale(.7)}}
+.cl{position:absolute;border-radius:999px;filter:blur(6px);background:rgba(255,255,255,.35);display:none;animation:drift linear infinite}
+body.theme-cloudy .cl,body.theme-rainy .cl,body.theme-thunder .cl{display:block}
+body.theme-sunny .cl.c1{display:block;opacity:.5}
+body.theme-rainy .cl{background:rgba(190,210,230,.28)}
+body.theme-thunder .cl{background:rgba(120,110,160,.35)}
+@keyframes drift{from{transform:translateX(-30vw)}to{transform:translateX(120vw)}}
+.rainLayer{position:absolute;inset:0;display:none}
+body.theme-rainy .rainLayer,body.theme-thunder .rainLayer{display:block}
+.rainLayer i{position:absolute;top:-12%;width:1.5px;height:64px;border-radius:2px;
+  background:linear-gradient(180deg,transparent,rgba(160,215,255,.75));animation:drop 1.1s linear infinite}
+@keyframes drop{to{transform:translateY(115vh)}}
+.flashFx{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(230,240,255,.9),rgba(180,190,255,.25) 45%,transparent 70%);opacity:0;display:none}
+body.theme-thunder .flashFx{display:block;animation:boltFx 7s infinite}
+@keyframes boltFx{0%,88%,94%,100%{opacity:0}89%,91%{opacity:.85}92%{opacity:.2}93%{opacity:.65}}
+
+/* ================= GEO MODAL ================= */
+#geoModal{position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;padding:20px;
+  background:rgba(3,8,20,.65);backdrop-filter:blur(8px);opacity:0;pointer-events:none;transition:.35s}
+#geoModal.on{opacity:1;pointer-events:auto}
+.geo-card{max-width:440px;width:100%;padding:34px 30px;text-align:center;border-radius:32px;transform:translateY(18px) scale(.97);transition:.35s}
+#geoModal.on .geo-card{transform:none}
+.geo-card .pin{width:76px;height:76px;margin:0 auto 16px;border-radius:50%;display:grid;place-items:center;font-size:2.1rem;
+  background:linear-gradient(135deg,#185ADB,#00C9FF);box-shadow:0 12px 34px rgba(0,140,255,.5);animation:bob 2.6s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-7px)}}
+.geo-card h3{font-size:1.25rem;font-weight:800;margin-bottom:10px}
+.geo-card p{color:var(--txt2);font-size:.88rem;line-height:1.6;margin-bottom:22px}
+.geo-btns{display:grid;gap:10px}
+.geo-note{margin-top:14px;font-size:.68rem;color:var(--txt2);opacity:.85}
+
+/* ================= HERO ================= */
+#hero{min-height:96vh;display:flex;align-items:center;padding:150px 0 60px;position:relative}
+#three-bg{position:absolute;inset:0;z-index:0}
+.hero-grid{position:relative;z-index:2;display:grid;grid-template-columns:1.15fr .95fr;gap:36px;align-items:center;width:100%}
+@media(max-width:920px){.hero-grid{grid-template-columns:1fr}}
+.hero-left h1{font-size:clamp(1.9rem,4.4vw,3.2rem);font-weight:900;line-height:1.1;margin:16px 0;letter-spacing:-1px}
+.hero-left p.lead{color:var(--txt2);font-size:1rem;max-width:520px;margin-bottom:24px}
+.hero-cta{display:flex;gap:12px;flex-wrap:wrap}
+
+.now-card{padding:30px;position:relative;overflow:hidden;border-radius:36px}
+.now-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.now-city{font-weight:800;font-size:1.06rem}
+.now-city small{display:block;color:var(--txt2);font-weight:600;font-size:.7rem;margin-top:2px}
+.now-main{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:8px 0 2px}
+.now-temp{font-size:6rem;font-weight:900;font-family:'Poppins',sans-serif;line-height:1;letter-spacing:-4px}
+.now-temp sup{font-size:2rem;font-weight:700;letter-spacing:0;vertical-align:super}
+.now-ico{font-size:4.4rem;filter:drop-shadow(0 8px 20px rgba(0,40,90,.4));animation:bob 3.4s ease-in-out infinite}
+.now-desc{color:var(--txt2);font-weight:700;margin-bottom:18px;font-size:1rem}
+.now-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.nstat{background:rgba(255,255,255,.1);border:1px solid var(--card-brd);border-radius:var(--r-md);padding:12px 8px;text-align:center;backdrop-filter:blur(6px)}
+html[data-theme="light"] .nstat{background:rgba(255,255,255,.55)}
+.nstat b{display:block;font-size:1rem;font-weight:800}
+.nstat span{font-size:.62rem;color:var(--txt2);font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+
+/* ================= CYCLONE HUB ================= */
+#cyclone .hub{border-radius:36px;overflow:hidden;border:1.5px solid rgba(255,90,90,.45);box-shadow:0 14px 50px rgba(180,20,30,.25)}
+#cyclone .hub.calm{border-color:rgba(90,220,160,.4);box-shadow:0 14px 50px rgba(10,120,80,.2)}
+.hub-head{display:flex;align-items:center;gap:12px;padding:16px 22px;font-weight:900;font-size:1rem;color:#fff;
+  background:linear-gradient(90deg,#a00a14,#dc2828)}
+.hub.calm .hub-head{background:linear-gradient(90deg,#0a6a46,#0e8a5c)}
+.hub-head .dot{width:11px;height:11px;border-radius:50%;background:#fff;animation:pulse 1.2s infinite}
+.hub-body{display:grid;grid-template-columns:1.2fr .9fr;gap:0;background:var(--card);backdrop-filter:blur(var(--glass-blur))}
+@media(max-width:880px){.hub-body{grid-template-columns:1fr}}
+.hub-col{padding:24px}
+.hub-col + .hub-col{border-left:1px solid var(--card-brd)}
+@media(max-width:880px){.hub-col + .hub-col{border-left:none;border-top:1px solid var(--card-brd)}}
+.hub-col h4{font-size:.95rem;font-weight:800;margin-bottom:14px;display:flex;gap:8px;align-items:center}
+.tl{position:relative;padding-left:20px;max-height:340px;overflow-y:auto}
+.tl::before{content:"";position:absolute;left:5px;top:4px;bottom:4px;width:2px;background:linear-gradient(180deg,var(--danger),transparent)}
+.tl-item{position:relative;padding:0 0 16px 12px;font-size:.85rem;line-height:1.5}
+.tl-item::before{content:"";position:absolute;left:-19px;top:5px;width:10px;height:10px;border-radius:50%;background:var(--danger);box-shadow:0 0 0 3px rgba(255,80,80,.25)}
+.hub.calm .tl-item::before{background:var(--safe);box-shadow:0 0 0 3px rgba(60,220,140,.2)}
+.hub.calm .tl::before{background:linear-gradient(180deg,var(--safe),transparent)}
+.tl-item .t{font-weight:800;font-size:.74rem;color:var(--txt2);display:block;font-variant-numeric:tabular-nums}
+.em-grid{display:grid;gap:9px}
+.em{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 14px;border-radius:var(--r-sm);
+  background:rgba(255,255,255,.09);border:1px solid var(--card-brd);font-size:.83rem;font-weight:700}
+html[data-theme="light"] .em{background:rgba(255,255,255,.55)}
+.em a{color:#ff8585;text-decoration:none;font-weight:900;font-variant-numeric:tabular-nums;white-space:nowrap}
+html[data-theme="light"] .em a{color:#c81e1e}
+.hub-note{font-size:.7rem;color:var(--txt2);margin-top:12px;line-height:1.5}
+
+/* ================= DISTRICTS ================= */
+.dist-layout{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
+@media(max-width:920px){.dist-layout{grid-template-columns:1fr}}
+.windy-box{border-radius:var(--r-lg);overflow:hidden;border:1px solid var(--card-brd);box-shadow:var(--shadow)}
+.windy-box iframe{display:block;width:100%;height:430px;border:0}
+.map-side{position:sticky;top:130px}
+.dist-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.dcard{padding:16px;cursor:pointer;transition:.25s;position:relative;border-radius:var(--r-md)}
+.dcard:hover{transform:translateY(-4px) scale(1.015)}
+.dcard.sel{outline:2px solid var(--yellow);outline-offset:-1px}
+.dcard h4{font-size:.78rem;font-weight:800;margin-bottom:6px;line-height:1.25;padding-right:26px}
+.dcard .dtemp{font-size:1.8rem;font-weight:900;font-family:'Poppins',sans-serif;letter-spacing:-1px}
+.dcard .dico{position:absolute;top:14px;right:13px;font-size:1.45rem}
+.dcard .dmeta{margin-top:6px;font-size:.67rem;color:var(--txt2);display:flex;gap:8px;flex-wrap:wrap;font-weight:700}
+#dist-detail{margin-top:24px;padding:26px;display:none;border-radius:var(--r-lg)}
 #dist-detail.on{display:block;animation:fadeUp .45s}
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
 .dd-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
-.dd-days{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px}
-.dd-day{background:rgba(255,255,255,.05);border:1px solid var(--card-brd);border-radius:14px;padding:12px;text-align:center}
-[data-theme="light"] .dd-day{background:rgba(255,255,255,.5)}
-.dd-day .d{font-size:.7rem;font-weight:700;color:var(--txt2);text-transform:uppercase}
+.dd-days{display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:10px}
+.dd-day{background:rgba(255,255,255,.09);border:1px solid var(--card-brd);border-radius:var(--r-md);padding:12px;text-align:center}
+html[data-theme="light"] .dd-day{background:rgba(255,255,255,.55)}
+.dd-day .d{font-size:.68rem;font-weight:800;color:var(--txt2);text-transform:uppercase}
 .dd-day .i{font-size:1.7rem;margin:6px 0}
-.dd-day .t{font-weight:700;font-size:.85rem}
-.dd-day .r{font-size:.68rem;color:var(--cyan);font-weight:600;margin-top:3px}
+.dd-day .t{font-weight:800;font-size:.85rem}
+.dd-day .r{font-size:.66rem;color:var(--txt2);font-weight:700;margin-top:3px}
+#refresh-note{font-size:.7rem;color:var(--txt2);font-weight:700}
 
-/* ---------- Forecast timeline ---------- */
+/* ================= FORECAST ================= */
 .fc-scroll{display:flex;gap:14px;overflow-x:auto;padding:6px 4px 18px;scroll-snap-type:x mandatory}
 .fc-scroll::-webkit-scrollbar{height:8px}
-.fc-scroll::-webkit-scrollbar-thumb{background:var(--bay);border-radius:99px}
-.fc-card{min-width:150px;scroll-snap-align:start;padding:18px 14px;text-align:center;transition:.25s}
-.fc-card:hover{transform:translateY(-6px) scale(1.02);border-color:var(--cyan)}
-.fc-card .day{font-weight:700;font-size:.8rem}
-.fc-card .date{font-size:.68rem;color:var(--txt2);margin-bottom:8px}
-.fc-card .fico{font-size:2.6rem;margin:8px 0;display:inline-block;animation:float 3.5s ease-in-out infinite}
+.fc-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.35);border-radius:99px}
+.fc-card{min-width:150px;scroll-snap-align:start;padding:20px 14px;text-align:center;transition:.25s;border-radius:var(--r-md)}
+.fc-card:hover{transform:translateY(-6px) scale(1.02)}
+.fc-card .day{font-weight:800;font-size:.8rem}
+.fc-card .date{font-size:.66rem;color:var(--txt2);margin-bottom:8px;font-weight:700}
+.fc-card .fico{font-size:2.7rem;margin:8px 0;display:inline-block;animation:float 3.5s ease-in-out infinite}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
-.fc-card .mx{font-weight:800;font-size:1.15rem}
-.fc-card .mn{color:var(--txt2);font-weight:600;font-size:.85rem}
-.fc-card .row{display:flex;justify-content:space-between;font-size:.66rem;color:var(--txt2);font-weight:600;margin-top:8px;border-top:1px dashed var(--card-brd);padding-top:7px}
-.fc-card .row b{color:var(--cyan)}
-#tempChartBox{padding:22px;margin-top:24px}
+.fc-card .mx{font-weight:900;font-size:1.25rem;font-family:'Poppins',sans-serif}
+.fc-card .mn{color:var(--txt2);font-weight:700;font-size:.85rem}
+.fc-card .row{display:flex;justify-content:space-between;font-size:.64rem;color:var(--txt2);font-weight:700;margin-top:8px;border-top:1px dashed var(--card-brd);padding-top:7px}
+.fc-card .row b{color:var(--txt)}
+#tempChartBox{padding:24px;margin-top:24px;border-radius:var(--r-lg)}
 
-/* ---------- Rytu / Matsya ---------- */
+/* ================= JALA VANI ================= */
+.dam-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.dam{padding:22px;border-radius:var(--r-lg)}
+.dam-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px}
+.dam h4{font-size:1rem;font-weight:800}
+.dam h4 small{display:block;font-weight:600;color:var(--txt2);font-size:.68rem;margin-top:2px}
+.dam-status{font-size:.62rem;font-weight:900;padding:4px 10px;border-radius:999px;letter-spacing:.5px;white-space:nowrap}
+.dam-status.ok{background:rgba(34,197,94,.18);color:#7effb0;border:1px solid rgba(34,197,94,.4)}
+.dam-status.fill{background:rgba(255,195,0,.15);color:#ffd75e;border:1px solid rgba(255,195,0,.4)}
+.dam-status.danger{background:rgba(255,60,60,.16);color:#ff9090;border:1px solid rgba(255,80,80,.5);animation:tflash 1.5s infinite}
+html[data-theme="light"] .dam-status.ok{color:#0c7a3d}
+html[data-theme="light"] .dam-status.fill{color:#8a6500}
+html[data-theme="light"] .dam-status.danger{color:#b41414}
+.dam-bar{height:14px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden;margin:12px 0 4px;position:relative}
+.dam-bar .fill-b{height:100%;border-radius:99px;background:linear-gradient(90deg,#22c55e,#ffc300 65%,#ff4d4d 92%);transition:width 1.2s ease}
+.dam-bar .mark{position:absolute;top:-3px;bottom:-3px;width:2.5px;background:#ff5b5b;right:8%}
+.dam-pct{display:flex;justify-content:space-between;font-size:.68rem;font-weight:800;color:var(--txt2);margin-bottom:12px}
+.dam-nums{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.dam-nums .n{background:rgba(255,255,255,.09);border:1px solid var(--card-brd);border-radius:var(--r-sm);padding:9px 6px;text-align:center}
+html[data-theme="light"] .dam-nums .n{background:rgba(255,255,255,.55)}
+.dam-nums b{display:block;font-size:.85rem;font-weight:800}
+.dam-nums span{font-size:.58rem;color:var(--txt2);font-weight:700;text-transform:uppercase}
+
+/* ================= VIDYUT VANI ================= */
+.vid-grid{display:grid;grid-template-columns:.9fr 1.1fr;gap:20px}
+@media(max-width:880px){.vid-grid{grid-template-columns:1fr}}
+.vid-card{padding:26px;border-radius:var(--r-lg)}
+.vid-big{font-size:4.2rem;font-weight:900;font-family:'Poppins',sans-serif;line-height:1;letter-spacing:-2px}
+.vid-big small{font-size:1rem;letter-spacing:0;font-weight:700;color:var(--txt2)}
+.risk-bar{height:16px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden;margin:14px 0 6px}
+.risk-bar div{height:100%;border-radius:99px;background:linear-gradient(90deg,#22c55e,#ffc300 55%,#ff4d4d 85%);transition:width 1.2s ease}
+.risk-lbl{display:flex;justify-content:space-between;font-size:.68rem;font-weight:800;color:var(--txt2)}
+#vidWarn{display:none;margin-top:18px;padding:16px 20px;border-radius:var(--r-md);font-weight:800;font-size:.92rem;
+  background:rgba(255,60,60,.14);border:1.5px solid rgba(255,80,80,.55);color:#ff9c9c;animation:tflash 1.6s infinite}
+html[data-theme="light"] #vidWarn{color:#b41414}
+#vidWarn.on{display:block}
+.risk-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.rchip{font-size:.7rem;font-weight:800;padding:6px 12px;border-radius:999px;border:1px solid}
+.rchip.hi{background:rgba(255,60,60,.14);border-color:rgba(255,90,90,.5);color:#ff9c9c}
+.rchip.md{background:rgba(255,195,0,.12);border-color:rgba(255,195,0,.45);color:#ffd75e}
+html[data-theme="light"] .rchip.hi{color:#b41414}
+html[data-theme="light"] .rchip.md{color:#8a6500}
+
+/* ================= ADVISORY (rytu/matsya) ================= */
 .split{display:grid;grid-template-columns:1fr 1fr;gap:22px}
 @media(max-width:920px){.split{grid-template-columns:1fr}}
-.advis{padding:24px}
-.advis h3{display:flex;align-items:center;gap:10px;font-size:1.15rem;margin-bottom:14px}
-.adv-item{display:flex;gap:12px;padding:12px 0;border-bottom:1px dashed var(--card-brd);font-size:.88rem;line-height:1.5}
+.advis{padding:26px;border-radius:var(--r-lg)}
+.advis h3{display:flex;align-items:center;gap:10px;font-size:1.12rem;margin-bottom:14px;font-weight:800}
+.adv-item{display:flex;gap:12px;padding:12px 0;border-bottom:1px dashed var(--card-brd);font-size:.88rem;line-height:1.55}
 .adv-item:last-child{border:none}
 .adv-item .e{font-size:1.4rem;flex:none}
-.adv-item b{display:block;font-size:.82rem}
+.adv-item b{display:block;font-size:.83rem}
 .adv-item span{color:var(--txt2);font-size:.8rem}
-select.sel-dist{background:var(--card);border:1px solid var(--card-brd);color:var(--txt);border-radius:12px;padding:9px 14px;font-family:inherit;font-weight:600;font-size:.85rem;cursor:pointer;backdrop-filter:blur(10px)}
-select.sel-dist option{background:#0A1931;color:#fff}
 .agg{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:16px 0}
-.agg .a{background:rgba(255,255,255,.05);border:1px solid var(--card-brd);border-radius:14px;padding:12px;text-align:center}
-[data-theme="light"] .agg .a{background:rgba(255,255,255,.5)}
-.agg b{display:block;font-size:1.15rem;font-family:'Poppins',sans-serif}
-.agg span{font-size:.65rem;color:var(--txt2);font-weight:700;text-transform:uppercase}
-.safe-banner{display:flex;align-items:center;gap:14px;padding:18px 22px;border-radius:16px;font-weight:800;font-size:1.05rem;margin:16px 0;border:1px solid}
-.safe-banner.ok{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.45);color:var(--safe)}
-.safe-banner.no{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.5);color:var(--danger);animation:blink 1.8s infinite}
-@keyframes blink{50%{box-shadow:0 0 22px rgba(239,68,68,.35)}}
-.windy-box{border-radius:18px;overflow:hidden;border:1px solid var(--card-brd);margin-top:18px}
-.windy-box iframe{display:block;width:100%;height:420px;border:0}
+.agg .a{background:var(--card);border:1px solid var(--card-brd);border-radius:var(--r-md);padding:14px;text-align:center;backdrop-filter:blur(10px)}
+.agg b{display:block;font-size:1.2rem;font-family:'Poppins',sans-serif;font-weight:800}
+.agg span{font-size:.62rem;color:var(--txt2);font-weight:800;text-transform:uppercase}
+.safe-banner{display:flex;align-items:center;gap:14px;padding:18px 24px;border-radius:var(--r-md);font-weight:900;font-size:1.02rem;margin:16px 0;border:1.5px solid}
+.safe-banner.ok{background:rgba(34,197,94,.13);border-color:rgba(34,197,94,.5);color:#7effb0}
+html[data-theme="light"] .safe-banner.ok{color:#0c7a3d}
+.safe-banner.no{background:rgba(255,60,60,.13);border-color:rgba(255,80,80,.55);color:#ff9c9c;animation:tflash 1.8s infinite}
+html[data-theme="light"] .safe-banner.no{color:#b41414}
 
-/* ---------- Alerts ---------- */
-#alert-list{display:grid;gap:12px}
-.al{display:flex;gap:14px;align-items:center;padding:16px 20px;border-radius:16px;font-weight:600;font-size:.9rem;border:1px solid}
-.al.warn{background:rgba(255,195,0,.1);border-color:rgba(255,195,0,.4);color:var(--yellow)}
-.al.dang{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.45);color:var(--danger)}
-.al.ok{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.4);color:var(--safe)}
+/* ================= ALERTS ================= */
+#alert-list{display:grid;gap:12px;margin-bottom:22px}
+.al{display:flex;gap:14px;align-items:center;padding:16px 20px;border-radius:var(--r-md);font-weight:700;font-size:.9rem;border:1.5px solid;backdrop-filter:blur(10px)}
+.al.warn{background:rgba(255,195,0,.1);border-color:rgba(255,195,0,.45);color:#ffd75e}
+.al.dang{background:rgba(255,60,60,.1);border-color:rgba(255,80,80,.5);color:#ff9c9c}
+.al.ok{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.45);color:#7effb0}
+html[data-theme="light"] .al.warn{color:#8a6500}
+html[data-theme="light"] .al.dang{color:#b41414}
+html[data-theme="light"] .al.ok{color:#0c7a3d}
 .al .e{font-size:1.5rem}
 
-/* ---------- Instagram ---------- */
+/* ================= INSTAGRAM ================= */
 .ig-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;align-items:start}
-.ig-embed{border-radius:18px;overflow:hidden;border:1px solid var(--card-brd);background:var(--card)}
+.ig-embed{border-radius:var(--r-lg);overflow:hidden;border:1px solid var(--card-brd);background:var(--card)}
 .ig-embed iframe{display:block;width:100%;height:480px;border:0}
-.ig-cta{padding:28px;text-align:center}
+.ig-cta{padding:30px;text-align:center;border-radius:var(--r-lg)}
 .ig-cta .big{font-size:2.6rem}
-.ig-cta h3{margin:10px 0 4px}
+.ig-cta h3{margin:10px 0 4px;font-weight:800}
 .ig-cta p{color:var(--txt2);font-size:.85rem;margin-bottom:18px}
 
-/* ---------- Footer ---------- */
-footer{border-top:1px solid var(--card-brd);padding:36px 0 28px;margin-top:40px;background:rgba(10,25,49,.35)}
-[data-theme="light"] footer{background:rgba(255,255,255,.4)}
+/* ================= FOOTER ================= */
+footer{border-top:1px solid var(--card-brd);padding:36px 0 28px;margin-top:40px;background:rgba(3,10,25,.4);backdrop-filter:blur(14px)}
+html[data-theme="light"] footer{background:rgba(255,255,255,.45)}
 .foot{display:flex;flex-wrap:wrap;gap:20px;justify-content:space-between;align-items:center;color:var(--txt2);font-size:.8rem}
-.foot a{color:var(--cyan);text-decoration:none;font-weight:600}
-.disc{margin-top:14px;font-size:.7rem;color:var(--txt2);opacity:.8;line-height:1.5}
-.reveal{opacity:0;transform:translateY(28px);transition:opacity .7s,transform .7s}
-.reveal.in{opacity:1;transform:none}
-#refresh-note{font-size:.7rem;color:var(--txt2);font-weight:600}
+.foot a{color:var(--txt);text-decoration:none;font-weight:800}
+.disc{margin-top:14px;font-size:.7rem;color:var(--txt2);opacity:.85;line-height:1.55}
 </style>
 </head>
-<body>
+<body class="theme-night">
+
+<!-- ===== dynamic weather scene (sun / moon / stars / clouds / rain / lightning) ===== -->
+<div id="scene">
+  <div class="sun"></div>
+  <div class="moon"></div>
+  <div class="stars" id="stars"></div>
+  <div class="cl c1" style="top:12%;width:220px;height:64px;animation-duration:70s"></div>
+  <div class="cl c2" style="top:26%;width:300px;height:80px;animation-duration:95s;animation-delay:-30s"></div>
+  <div class="cl c3" style="top:6%;width:180px;height:52px;animation-duration:55s;animation-delay:-12s"></div>
+  <div class="rainLayer" id="rainLayer"></div>
+  <div class="flashFx"></div>
+</div>
 
 <!-- ================= HEADER ================= -->
 <header>
@@ -214,12 +372,14 @@ footer{border-top:1px solid var(--card-brd);padding:36px 0 28px;margin-top:40px;
       <span>Srikakulam Weatherman<small class="en">Live AP Weather Hub</small><small class="te">లైవ్ AP వాతావరణ హబ్</small></span>
     </a>
     <nav>
+      <a href="#cyclone"><span class="en">Cyclone</span><span class="te">తుఫాను</span></a>
       <a href="#districts"><span class="en">Districts</span><span class="te">జిల్లాలు</span></a>
       <a href="#forecast"><span class="en">Forecast</span><span class="te">సూచన</span></a>
+      <a href="#jala"><span class="en">Jala Vani</span><span class="te">జల వాణి</span></a>
+      <a href="#vidyut"><span class="en">Vidyut Vani</span><span class="te">విద్యుత్ వాణి</span></a>
       <a href="#rytu"><span class="en">Rytu Vani</span><span class="te">రైతు వాణి</span></a>
-      <a href="#matsya"><span class="en">Matsyakara Vani</span><span class="te">మత్స్యకార వాణి</span></a>
-      <a href="#alerts"><span class="en">Alerts</span><span class="te">హెచ్చరికలు</span></a>
-      <a href="#insta">Instagram</a>
+      <a href="#matsya"><span class="en">Matsyakara</span><span class="te">మత్స్యకార</span></a>
+      <a href="#insta">Insta</a>
     </nav>
     <span id="clock">--:--:--</span>
     <div class="hbtns">
@@ -228,6 +388,26 @@ footer{border-top:1px solid var(--card-brd);padding:36px 0 28px;margin-top:40px;
     </div>
   </div>
 </header>
+
+<!-- ===== persistent cyclone ticker (click → cyclone hub) ===== -->
+<div id="cycTicker" class="calm" onclick="location.hash='#cyclone'"><div class="in" id="cycTickerIn"><span>⏳ Checking Bay of Bengal conditions…</span><span>⏳ Checking Bay of Bengal conditions…</span></div></div>
+
+<!-- ================= GEOLOCATION MODAL ================= -->
+<div id="geoModal" role="dialog" aria-modal="true" aria-labelledby="geoTitle">
+  <div class="geo-card glass">
+    <div class="pin">📍</div>
+    <h3 id="geoTitle"><span class="en">Get hyper-local weather for your area</span><span class="te">మీ ప్రాంతానికి ఖచ్చితమైన వాతావరణం పొందండి</span></h3>
+    <p>
+      <span class="en">To give you hyper-local weather updates, farmer advisories, and live alerts for your exact mandal, please allow location access. We never store or share your location.</span>
+      <span class="te">మీ మండలానికి ఖచ్చితమైన వాతావరణ అప్‌డేట్స్, రైతు సలహాలు & లైవ్ హెచ్చరికల కోసం లొకేషన్ యాక్సెస్ ఇవ్వండి. మీ లొకేషన్‌ను మేము ఎక్కడా భద్రపరచము, పంచుకోము.</span>
+    </p>
+    <div class="geo-btns">
+      <button class="btn btn-p" id="geoAllow">📍 <span class="en">Allow Location</span><span class="te">లొకేషన్ అనుమతించండి</span></button>
+      <button class="btn btn-o" id="geoManual"><span class="en">Choose District Manually</span><span class="te">జిల్లాను మాన్యువల్‌గా ఎంచుకోండి</span></button>
+    </div>
+    <p class="geo-note"><span class="en">If denied, we'll simply show Srikakulam by default — nothing breaks.</span><span class="te">నిరాకరిస్తే, డిఫాల్ట్‌గా శ్రీకాకుళం చూపిస్తాము.</span></p>
+  </div>
+</div>
 
 <!-- ================= HERO ================= -->
 <section id="hero">
@@ -240,8 +420,8 @@ footer{border-top:1px solid var(--card-brd);padding:36px 0 28px;margin-top:40px;
         <span class="te">మీ హైపర్-లోకల్ <span class="grad-txt">AP వాతావరణ</span> హబ్</span>
       </h1>
       <p class="lead">
-        <span class="en">Real weather station data, satellite maps & honest forecasts — from the coast of Srikakulam to Rayalaseema. Trusted by 130K+ followers.</span>
-        <span class="te">నిజమైన వెదర్ స్టేషన్ డేటా, శాటిలైట్ మ్యాప్స్ & నమ్మదగిన సూచనలు — శ్రీకాకుళం తీరం నుండి రాయలసీమ వరకు. 130K+ ఫాలోవర్ల నమ్మకం.</span>
+        <span class="en">Real weather-station data, cyclone bulletins, dam levels & honest forecasts — from the Srikakulam coast to Rayalaseema. Trusted by 130K+ followers.</span>
+        <span class="te">నిజమైన వెదర్ స్టేషన్ డేటా, తుఫాను బులెటిన్లు, డ్యామ్ నీటి మట్టాలు & నమ్మదగిన సూచనలు. 130K+ ఫాలోవర్ల నమ్మకం.</span>
       </p>
       <div class="hero-cta">
         <a class="btn btn-p" href="#districts"><span class="en">Check Your District</span><span class="te">మీ జిల్లా చూడండి</span> →</a>
@@ -250,11 +430,11 @@ footer{border-top:1px solid var(--card-brd);padding:36px 0 28px;margin-top:40px;
     </div>
     <div class="now-card glass" id="nowCard">
       <div class="now-top">
-        <div class="now-city">📍 <span class="en">Srikakulam</span><span class="te">శ్రీకాకుళం</span><small id="nowUpdated">—</small></div>
+        <div class="now-city">📍 <span id="nowCity">Srikakulam</span><small id="nowUpdated">—</small></div>
         <span class="chip"><span class="live-dot"></span>LIVE</span>
       </div>
       <div class="now-main">
-        <div class="now-temp" id="nowTemp">--<sup>°C</sup></div>
+        <div class="now-temp" id="nowTemp">--<sup>°</sup></div>
         <div class="now-ico" id="nowIco">⛅</div>
       </div>
       <div class="now-desc" id="nowDesc">Loading…</div>
@@ -270,59 +450,122 @@ footer{border-top:1px solid var(--card-brd);padding:36px 0 28px;margin-top:40px;
   </div>
 </section>
 
-<!-- ================= TICKER ================= -->
-<div class="ticker"><div class="ticker-in" id="tickerIn">⏳ Loading live alerts…</div></div>
-
-<!-- ================= DISTRICTS ================= -->
-<section id="districts">
+<!-- ================= CYCLONE BULLETIN & EMERGENCY HUB ================= -->
+<section id="cyclone" style="padding-top:20px">
   <div class="wrap">
-    <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:10px">
-      <div>
-        <h2 class="sec-title"><span class="en">AP Districts <span class="grad-txt">Live Grid</span></span><span class="te">AP జిల్లాల <span class="grad-txt">లైవ్ గ్రిడ్</span></span></h2>
-        <p class="sec-sub"><span class="en">Tap any district on the map or grid for live conditions & 5-day forecast.</span><span class="te">లైవ్ వాతావరణం & 5-రోజుల సూచన కోసం మ్యాప్ లేదా గ్రిడ్‌లో ఏ జిల్లానైనా నొక్కండి.</span></p>
-      </div>
-      <span id="refresh-note">⟳ <span class="en">Auto-refresh every 10 min</span><span class="te">ప్రతి 10 నిమిషాలకు రిఫ్రెష్</span> · <span id="lastRefresh">—</span></span>
-    </div>
-    <div class="dist-layout">
-      <div class="map-card glass">
-        <svg id="apMap" viewBox="0 0 400 430" xmlns="http://www.w3.org/2000/svg" aria-label="Andhra Pradesh districts map">
-          <path class="ap-shape" d="M258,18 L290,30 L318,52 L330,80 L352,108 L368,140 L376,168 L370,196
-            L352,220 L330,246 L300,278 L272,308 L248,338 L226,368 L208,396 L196,414
-            L178,404 L158,382 L150,356 L136,338 L118,326 L100,306 L96,282 L82,266
-            L60,258 L44,240 L40,216 L52,196 L48,172 L64,158 L88,152 L96,132
-            L120,124 L142,128 L162,118 L180,124 L200,112 L214,90 L224,64 L238,40 Z"/>
-          <g id="mapDots"></g>
-        </svg>
-        <p style="font-size:.68rem;color:var(--txt2);margin-top:8px;text-align:center"><span class="en">Stylised map · district HQ locations</span><span class="te">స్టైలైజ్డ్ మ్యాప్ · జిల్లా కేంద్రాలు</span></p>
-      </div>
-      <div>
-        <div class="dist-grid" id="distGrid"></div>
-        <div id="dist-detail" class="glass">
-          <div class="dd-head">
-            <h3 id="ddName" style="font-size:1.3rem">—</h3>
-            <span class="chip" id="ddNow">—</span>
+    <div class="hub calm" id="hubBox">
+      <div class="hub-head"><span class="dot"></span><span id="hubHeadTxt">Live Cyclone Bulletin & Emergency Hub</span></div>
+      <div class="hub-body">
+        <div class="hub-col">
+          <h4>📰 <span class="en">Live Updates</span><span class="te">లైవ్ అప్‌డేట్స్</span></h4>
+          <div class="tl" id="cycTimeline"></div>
+        </div>
+        <div class="hub-col">
+          <h4>🆘 <span class="en">Emergency Helplines (AP)</span><span class="te">అత్యవసర హెల్ప్‌లైన్లు (AP)</span></h4>
+          <div class="em-grid">
+            <div class="em"><span><span class="en">AP State Disaster Mgmt (APSDMA)</span><span class="te">AP విపత్తు నిర్వహణ (APSDMA)</span></span><a href="tel:1070">1070</a></div>
+            <div class="em"><span><span class="en">District Control Room</span><span class="te">జిల్లా కంట్రోల్ రూమ్</span></span><a href="tel:1077">1077</a></div>
+            <div class="em"><span><span class="en">NDRF Control Room</span><span class="te">NDRF కంట్రోల్ రూమ్</span></span><a href="tel:01124363260">011-2436-3260</a></div>
+            <div class="em"><span><span class="en">Coast Guard (Sea Rescue)</span><span class="te">కోస్ట్ గార్డ్ (సముద్ర రక్షణ)</span></span><a href="tel:1554">1554</a></div>
+            <div class="em"><span><span class="en">Fishermen Emergency</span><span class="te">మత్స్యకార అత్యవసరం</span></span><a href="tel:1093">1093</a></div>
+            <div class="em"><span><span class="en">Ambulance / Police</span><span class="te">అంబులెన్స్ / పోలీస్</span></span><a href="tel:112">108 / 112</a></div>
           </div>
-          <div class="dd-days" id="ddDays"></div>
+          <p class="hub-note"><span class="en">Official bulletins: <b>IMD Amaravati / Visakhapatnam</b> · mausam.imd.gov.in. Save these numbers before storms — network may fail during power outages.</span><span class="te">అధికారిక బులెటిన్లు: <b>IMD అమరావతి / విశాఖపట్నం</b> · mausam.imd.gov.in. తుఫానుకు ముందే ఈ నంబర్లు సేవ్ చేసుకోండి.</span></p>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ================= FORECAST ================= -->
-<section id="forecast" style="background:rgba(24,90,219,.05)">
+<!-- ================= DISTRICTS ================= -->
+<section id="districts" style="padding-top:30px">
   <div class="wrap">
-    <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px">
+    <div class="sec-head">
+      <div>
+        <h2 class="sec-title"><span class="en">AP Districts <span class="grad-txt">Live Grid</span></span><span class="te">AP జిల్లాల <span class="grad-txt">లైవ్ గ్రిడ్</span></span></h2>
+        <p class="sec-sub"><span class="en">Live Windy map with real-time temperatures + tap any district card for details & 5-day forecast.</span><span class="te">రియల్-టైమ్ ఉష్ణోగ్రతలతో లైవ్ Windy మ్యాప్ + వివరాల కోసం ఏ జిల్లా కార్డునైనా నొక్కండి.</span></p>
+      </div>
+      <span id="refresh-note">⟳ <span class="en">Auto-refresh 10 min</span><span class="te">10 నిమి. రిఫ్రెష్</span> · <span id="lastRefresh">—</span></span>
+    </div>
+    <div class="dist-layout">
+      <div class="map-side">
+        <div class="windy-box">
+          <iframe title="Windy live temperature map — Andhra Pradesh" loading="lazy"
+            src="https://embed.windy.com/embed2.html?lat=16.2&lon=80.9&detailLat=18.3&detailLon=83.9&width=650&height=450&zoom=6&level=surface&overlay=temp&product=ecmwf&menu=&message=true&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=km%2Fh&metricTemp=%C2%B0C&radarRange=-1"></iframe>
+        </div>
+        <p style="font-size:.68rem;color:var(--txt2);margin-top:8px;text-align:center"><span class="en">Live temperature layer by Windy.com — switch layers (wind/rain/clouds) inside the map</span><span class="te">Windy.com లైవ్ ఉష్ణోగ్రత మ్యాప్ — మ్యాప్ లోపల లేయర్లు మార్చవచ్చు</span></p>
+      </div>
+      <div>
+        <div class="dist-grid" id="distGrid"></div>
+      </div>
+    </div>
+    <div id="dist-detail" class="glass">
+      <div class="dd-head">
+        <h3 id="ddName" style="font-size:1.3rem">—</h3>
+        <span class="chip" id="ddNow">—</span>
+      </div>
+      <div class="dd-days" id="ddDays"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FORECAST ================= -->
+<section id="forecast">
+  <div class="wrap">
+    <div class="sec-head">
       <div>
         <h2 class="sec-title"><span class="en">8-Day <span class="grad-txt">Advanced Forecast</span></span><span class="te">8-రోజుల <span class="grad-txt">అడ్వాన్స్డ్ సూచన</span></span></h2>
-        <p class="sec-sub"><span class="en">Max/min temp, rain probability, wind gusts & humidity.</span><span class="te">గరిష్ట/కనిష్ట ఉష్ణోగ్రత, వర్ష సంభావ్యత, గాలుల వేగం & తేమ.</span></p>
+        <p class="sec-sub"><span class="en">Max/min temp, rain probability, wind gusts & rainfall.</span><span class="te">గరిష్ట/కనిష్ట ఉష్ణోగ్రత, వర్ష సంభావ్యత, గాలుల వేగం & వర్షపాతం.</span></p>
       </div>
       <select class="sel-dist" id="fcDist"></select>
     </div>
     <div class="fc-scroll" id="fcScroll"></div>
     <div id="tempChartBox" class="glass">
-      <h4 style="margin-bottom:14px"><span class="en">🌡️ Temperature Trend</span><span class="te">🌡️ ఉష్ణోగ్రత ధోరణి</span></h4>
+      <h4 style="margin-bottom:14px;font-weight:800"><span class="en">🌡️ Temperature Trend</span><span class="te">🌡️ ఉష్ణోగ్రత ధోరణి</span></h4>
       <canvas id="tempChart" height="90"></canvas>
+    </div>
+  </div>
+</section>
+
+<!-- ================= JALA VANI — DAMS ================= -->
+<section id="jala">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <h2 class="sec-title">💧 <span class="en">Jala Vani — <span class="grad-txt">Dam & Reservoir Tracker</span></span><span class="te">జల వాణి — <span class="grad-txt">డ్యామ్ & రిజర్వాయర్ ట్రాకర్</span></span></h2>
+        <p class="sec-sub"><span class="en">Current level vs Full Reservoir Level (FRL) for AP's major projects. Red marker = danger/gate-lift zone.</span><span class="te">AP ప్రధాన ప్రాజెక్టుల ప్రస్తుత నీటి మట్టం vs పూర్తి స్థాయి (FRL). ఎరుపు గుర్తు = ప్రమాద/గేట్ల జోన్.</span></p>
+      </div>
+    </div>
+    <div class="dam-grid" id="damGrid"></div>
+    <p style="font-size:.7rem;color:var(--txt2);margin-top:14px;line-height:1.5">
+      <span class="en">⚠️ Indicative figures for layout — live inflow/outflow needs the AP Water Resources (AP WRIMS) feed. Official data: <a href="https://apwrims.ap.gov.in" target="_blank" rel="noopener" style="color:var(--txt)">apwrims.ap.gov.in</a></span>
+      <span class="te">⚠️ ఇవి సూచనాత్మక గణాంకాలు — లైవ్ డేటా కోసం AP WRIMS ఫీడ్ అవసరం. అధికారిక డేటా: apwrims.ap.gov.in</span>
+    </p>
+  </div>
+</section>
+
+<!-- ================= VIDYUT VANI — LIGHTNING & OUTAGE RISK ================= -->
+<section id="vidyut">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <h2 class="sec-title">⚡ <span class="en">Vidyut Vani — <span class="grad-txt">Lightning & Power Outage Risk</span></span><span class="te">విద్యుత్ వాణి — <span class="grad-txt">మెరుపులు & విద్యుత్ అంతరాయ ప్రమాదం</span></span></h2>
+        <p class="sec-sub"><span class="en">Computed live from thunderstorm cells & wind gusts across all 26 districts. Charge phones & inverters before the storm hits!</span><span class="te">26 జిల్లాల ఉరుములు & గాలుల డేటా నుండి లైవ్‌గా లెక్కించబడుతుంది. తుఫానుకు ముందే ఫోన్లు & ఇన్వర్టర్లు ఛార్జ్ చేసుకోండి!</span></p>
+      </div>
+    </div>
+    <div id="vidWarn"></div>
+    <div class="vid-grid" style="margin-top:18px">
+      <div class="vid-card glass">
+        <h4 style="font-weight:800;margin-bottom:14px">⛈️ <span class="en">Thunderstorm Activity</span><span class="te">ఉరుముల కార్యకలాపం</span></h4>
+        <div class="vid-big" id="vidCells">0<small> <span class="en">active storm cells</span><span class="te">యాక్టివ్ స్టార్మ్ సెల్స్</span></small></div>
+        <p style="color:var(--txt2);font-size:.8rem;margin-top:12px" id="vidCellsNote">—</p>
+      </div>
+      <div class="vid-card glass">
+        <h4 style="font-weight:800;margin-bottom:6px">🔌 <span class="en">Power Grid Risk</span><span class="te">విద్యుత్ గ్రిడ్ ప్రమాదం</span></h4>
+        <div class="risk-bar"><div id="riskFill" style="width:5%"></div></div>
+        <div class="risk-lbl"><span class="en">Low</span><span class="te">తక్కువ</span><b id="riskPct">—</b><span class="en">Severe</span><span class="te">తీవ్రం</span></div>
+        <div class="risk-chips" id="riskChips"></div>
+      </div>
     </div>
   </div>
 </section>
@@ -330,7 +573,7 @@ footer{border-top:1px solid var(--card-brd);padding:36px 0 28px;margin-top:40px;
 <!-- ================= RYTU VANI ================= -->
 <section id="rytu">
   <div class="wrap">
-    <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px">
+    <div class="sec-head">
       <div>
         <h2 class="sec-title">🌾 <span class="en">Rytu Vani — <span class="grad-txt">Farmers Special</span></span><span class="te">రైతు వాణి — <span class="grad-txt">రైతుల ప్రత్యేకం</span></span></h2>
         <p class="sec-sub"><span class="en">Weather-based crop advisory. Vari vestada? Mirchi ki mandu kottavacha? — answered with live data.</span><span class="te">వాతావరణ ఆధారిత పంట సలహా. వరి వేస్తదా? మిర్చికి మందు కొట్టవచ్చా? — లైవ్ డేటాతో సమాధానం.</span></p>
@@ -346,9 +589,9 @@ footer{border-top:1px solid var(--card-brd);padding:36px 0 28px;margin-top:40px;
 </section>
 
 <!-- ================= MATSYAKARA VANI ================= -->
-<section id="matsya" style="background:rgba(0,201,255,.04)">
+<section id="matsya">
   <div class="wrap">
-    <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px">
+    <div class="sec-head">
       <div>
         <h2 class="sec-title">🎣 <span class="en">Matsyakara Vani — <span class="grad-txt">Fishermen Special</span></span><span class="te">మత్స్యకార వాణి — <span class="grad-txt">మత్స్యకారుల ప్రత్యేకం</span></span></h2>
         <p class="sec-sub"><span class="en">Bay of Bengal sea conditions for the AP coast. Always verify with INCOIS/IMD before venturing.</span><span class="te">AP తీరానికి బంగాళాఖాతం సముద్ర పరిస్థితులు. వేటకు వెళ్లే ముందు INCOIS/IMD తో ధృవీకరించండి.</span></p>
@@ -363,14 +606,15 @@ footer{border-top:1px solid var(--card-brd);padding:36px 0 28px;margin-top:40px;
         <div id="seaAdv"></div>
         <p style="font-size:.72rem;color:var(--txt2);margin-top:12px">
           <span class="en">Tide timings & official fishermen warnings: </span><span class="te">అలల సమయాలు & అధికారిక హెచ్చరికలు: </span>
-          <a href="https://incois.gov.in/portal/osf/osf.jsp" target="_blank" rel="noopener" style="color:var(--cyan)">INCOIS</a> ·
-          <a href="https://mausam.imd.gov.in/imd_latest/contents/coastal_bulletin.php" target="_blank" rel="noopener" style="color:var(--cyan)">IMD Coastal Bulletin</a>
+          <a href="https://incois.gov.in/portal/osf/osf.jsp" target="_blank" rel="noopener" style="color:var(--txt)">INCOIS</a> ·
+          <a href="https://mausam.imd.gov.in/imd_latest/contents/coastal_bulletin.php" target="_blank" rel="noopener" style="color:var(--txt)">IMD Coastal Bulletin</a>
         </p>
       </div>
       <div>
-        <h3 style="margin-bottom:10px">🌀 <span class="en">Cyclone / Low Pressure Tracker</span><span class="te">తుఫాను / అల్పపీడన ట్రాకర్</span></h3>
-        <div class="windy-box glass" style="margin-top:0">
-          <iframe title="Windy wind map Bay of Bengal" src="https://embed.windy.com/embed2.html?lat=15.5&lon=84.0&detailLat=17.5&detailLon=83.3&width=650&height=420&zoom=5&level=surface&overlay=wind&product=ecmwf&menu=&message=true&marker=true&calendar=now&pressure=true&type=map&location=coordinates&detail=&metricWind=km%2Fh&metricTemp=%C2%B0C&radarRange=-1" loading="lazy"></iframe>
+        <h3 style="margin-bottom:10px;font-weight:800">🌀 <span class="en">Cyclone / Low Pressure Tracker</span><span class="te">తుఫాను / అల్పపీడన ట్రాకర్</span></h3>
+        <div class="windy-box">
+          <iframe title="Windy wind map Bay of Bengal" loading="lazy"
+            src="https://embed.windy.com/embed2.html?lat=15.5&lon=84.0&detailLat=17.5&detailLon=83.3&width=650&height=420&zoom=5&level=surface&overlay=wind&product=ecmwf&menu=&message=true&marker=true&calendar=now&pressure=true&type=map&location=coordinates&detail=&metricWind=km%2Fh&metricTemp=%C2%B0C&radarRange=-1"></iframe>
         </div>
       </div>
     </div>
@@ -383,19 +627,20 @@ footer{border-top:1px solid var(--card-brd);padding:36px 0 28px;margin-top:40px;
     <h2 class="sec-title">⚠️ <span class="en">Live Alerts & <span class="grad-txt">Radar</span></span><span class="te">లైవ్ హెచ్చరికలు & <span class="grad-txt">రాడార్</span></span></h2>
     <p class="sec-sub"><span class="en">Auto-generated from live data across all 26 districts. For official warnings refer IMD.</span><span class="te">26 జిల్లాల లైవ్ డేటా నుండి ఆటో-జనరేటెడ్. అధికారిక హెచ్చరికల కోసం IMD చూడండి.</span></p>
     <div id="alert-list"></div>
-    <div class="windy-box glass">
-      <iframe title="Windy radar Andhra Pradesh" src="https://embed.windy.com/embed2.html?lat=16.5&lon=80.5&detailLat=18.3&detailLon=83.9&width=650&height=420&zoom=6&level=surface&overlay=radar&product=radar&menu=&message=true&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=km%2Fh&metricTemp=%C2%B0C&radarRange=-1" loading="lazy"></iframe>
+    <div class="windy-box">
+      <iframe title="Windy radar Andhra Pradesh" loading="lazy"
+        src="https://embed.windy.com/embed2.html?lat=16.5&lon=80.5&detailLat=18.3&detailLon=83.9&width=650&height=420&zoom=6&level=surface&overlay=radar&product=radar&menu=&message=true&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=km%2Fh&metricTemp=%C2%B0C&radarRange=-1"></iframe>
     </div>
     <p style="font-size:.72rem;color:var(--txt2);margin-top:10px">
       <span class="en">Satellite & radar: </span><span class="te">శాటిలైట్ & రాడార్: </span>
-      <a href="https://mausam.imd.gov.in/imd_latest/contents/satellite.php" target="_blank" rel="noopener" style="color:var(--cyan)">IMD Satellite</a> ·
-      <a href="https://mausam.imd.gov.in/imd_latest/contents/index_radar.php" target="_blank" rel="noopener" style="color:var(--cyan)">IMD Radar</a>
+      <a href="https://mausam.imd.gov.in/imd_latest/contents/satellite.php" target="_blank" rel="noopener" style="color:var(--txt)">IMD Satellite</a> ·
+      <a href="https://mausam.imd.gov.in/imd_latest/contents/index_radar.php" target="_blank" rel="noopener" style="color:var(--txt)">IMD Radar</a>
     </p>
   </div>
 </section>
 
 <!-- ================= INSTAGRAM ================= -->
-<section id="insta" style="background:rgba(24,90,219,.05)">
+<section id="insta">
   <div class="wrap">
     <h2 class="sec-title">📸 <span class="en">Latest from <span class="grad-txt">@srikakulam_weatherman</span></span><span class="te"><span class="grad-txt">@srikakulam_weatherman</span> నుండి తాజా అప్‌డేట్స్</span></h2>
     <p class="sec-sub"><span class="en">Reels, forecasts & storm updates for 130K+ followers.</span><span class="te">130K+ ఫాలోవర్లకు రీల్స్, సూచనలు & తుఫాను అప్‌డేట్స్.</span></p>
@@ -419,434 +664,12 @@ footer{border-top:1px solid var(--card-brd);padding:36px 0 28px;margin-top:40px;
       <a href="https://www.instagram.com/srikakulam_weatherman" target="_blank" rel="noopener"><span class="en">Follow on Instagram →</span><span class="te">ఇన్‌స్టాగ్రామ్‌లో ఫాలో అవ్వండి →</span></a>
     </div>
     <p class="disc">
-      <span class="en">Disclaimer: Weather data from IMD/OpenWeather/Open-Meteo. Advisories are indicative, auto-generated from forecast models. For official warnings, cyclone bulletins and fishermen advisories always refer to IMD (mausam.imd.gov.in) and INCOIS (incois.gov.in). © 2026 Srikakulam Weatherman.</span>
-      <span class="te">గమనిక: వాతావరణ డేటా IMD/OpenWeather/Open-Meteo నుండి. సలహాలు సూచనాత్మకం, ఫోర్‌కాస్ట్ మోడల్స్ నుండి ఆటో-జనరేటెడ్. అధికారిక హెచ్చరికలు, తుఫాను బులెటిన్లు & మత్స్యకారుల హెచ్చరికల కోసం ఎల్లప్పుడూ IMD (mausam.imd.gov.in) & INCOIS (incois.gov.in) చూడండి. © 2026 శ్రీకాకుళం వెదర్‌మ్యాన్.</span>
+      <span class="en">Disclaimer: Weather data from IMD/OpenWeather/Open-Meteo. Advisories, cyclone bulletin, dam & outage indicators are indicative and auto-generated from forecast models. For official warnings, cyclone bulletins and fishermen advisories always refer to IMD (mausam.imd.gov.in), INCOIS (incois.gov.in) and APSDMA. © 2026 Srikakulam Weatherman.</span>
+      <span class="te">గమనిక: వాతావరణ డేటా IMD/OpenWeather/Open-Meteo నుండి. సలహాలు, తుఫాను బులెటిన్, డ్యామ్ & విద్యుత్ సూచికలు సూచనాత్మకం. అధికారిక హెచ్చరికల కోసం IMD, INCOIS & APSDMA చూడండి. © 2026 శ్రీకాకుళం వెదర్‌మ్యాన్.</span>
     </p>
   </div>
 </footer>
 
-<script>
-/* ================================================================
-   SRIKAKULAM WEATHERMAN — LIVE AP WEATHER HUB
-   ----------------------------------------------------------------
-   OPENWEATHER KEY: paste your key below. While it says
-   "YOUR_OPENWEATHER_API_KEY", the site automatically uses
-   Open-Meteo (free, no key) so everything stays LIVE.
-   ================================================================ */
-const OWM_KEY = "YOUR_OPENWEATHER_API_KEY";
-const USE_OWM = OWM_KEY && !/YOUR_/.test(OWM_KEY);
-
-/* ---------- 26 districts: [name EN, name TE, lat, lon, coastal, sea lat, sea lon] ---------- */
-const DISTRICTS = [
- ["Alluri Sitharama Raju","అల్లూరి సీతారామరాజు",18.08,82.67,0],
- ["Anakapalli","అనకాపల్లి",17.69,83.00,1,17.5,83.1],
- ["Anantapuramu","అనంతపురము",14.68,77.60,0],
- ["Annamayya","అన్నమయ్య",14.05,78.75,0],
- ["Bapatla","బాపట్ల",15.90,80.47,1,15.75,80.6],
- ["Chittoor","చిత్తూరు",13.22,79.10,0],
- ["East Godavari","తూర్పు గోదావరి",17.00,81.78,0],
- ["Eluru","ఏలూరు",16.71,81.10,0],
- ["Guntur","గుంటూరు",16.31,80.44,0],
- ["Kakinada","కాకినాడ",16.99,82.25,1,16.9,82.4],
- ["Konaseema (Dr.BRA)","కోనసీమ (డా.బి.ఆర్.అం)",16.58,82.01,1,16.5,82.2],
- ["Kurnool","కర్నూలు",15.83,78.04,0],
- ["Nandyal","నంద్యాల",15.48,78.48,0],
- ["Krishna","కృష్ణా",16.19,81.14,1,16.05,81.3],
- ["NTR","ఎన్టీఆర్",16.51,80.65,0],
- ["Palnadu","పల్నాడు",16.23,80.05,0],
- ["Parvathipuram Manyam","పార్వతీపురం మన్యం",18.78,83.43,0],
- ["Prakasam","ప్రకాశం",15.51,80.05,1,15.3,80.3],
- ["Sri Sathya Sai","శ్రీ సత్యసాయి",14.17,77.81,0],
- ["Srikakulam","శ్రీకాకుళం",18.30,83.90,1,18.2,84.1],
- ["Nellore (SPSR)","నెల్లూరు (SPSR)",14.44,79.99,1,14.4,80.25],
- ["Tirupati","తిరుపతి",13.63,79.42,1,13.65,80.25],
- ["Visakhapatnam","విశాఖపట్నం",17.69,83.22,1,17.6,83.4],
- ["Vizianagaram","విజయనగరం",18.11,83.40,1,17.95,83.6],
- ["West Godavari","పశ్చిమ గోదావరి",16.54,81.52,1,16.35,81.75],
- ["YSR Kadapa","వైఎస్ఆర్ కడప",14.47,78.82,0]
-];
-const SRI_IDX = 19; // Srikakulam
-
-/* ---------- WMO weather codes → icon + bilingual description ---------- */
-const WMO = {
- 0:["☀️","Clear sky","నిర్మలాకాశం"],1:["🌤️","Mostly clear","ఎక్కువగా నిర్మలం"],
- 2:["⛅","Partly cloudy","పాక్షిక మేఘాలు"],3:["☁️","Overcast","మేఘావృతం"],
- 45:["🌫️","Fog","పొగమంచు"],48:["🌫️","Rime fog","పొగమంచు"],
- 51:["🌦️","Light drizzle","తేలికపాటి జల్లులు"],53:["🌦️","Drizzle","జల్లులు"],55:["🌧️","Heavy drizzle","భారీ జల్లులు"],
- 61:["🌦️","Light rain","తేలికపాటి వర్షం"],63:["🌧️","Moderate rain","మోస్తరు వర్షం"],65:["🌧️","Heavy rain","భారీ వర్షం"],
- 66:["🌧️","Freezing rain","శీతల వర్షం"],67:["🌧️","Freezing rain","శీతల వర్షం"],
- 71:["🌨️","Snow","మంచు"],73:["🌨️","Snow","మంచు"],75:["❄️","Heavy snow","భారీ మంచు"],
- 80:["🌦️","Rain showers","వర్షపు జల్లులు"],81:["🌧️","Rain showers","వర్షపు జల్లులు"],82:["⛈️","Violent showers","తీవ్ర జల్లులు"],
- 95:["⛈️","Thunderstorm","ఉరుములతో వర్షం"],96:["⛈️","Storm + hail","వడగళ్ల వాన"],99:["⛈️","Storm + hail","వడగళ్ల వాన"]
-};
-const wmo = c => WMO[c] || ["🌡️","Weather","వాతావరణం"];
-const bi = (en,te)=>`<span class="en">${en}</span><span class="te">${te}</span>`;
-
-let WX = null;          // array of per-district data
-let selDist = SRI_IDX;  // selected in districts grid
-let chart = null;
-
-/* ================= FETCH ENGINE ================= */
-async function fetchAll(){
-  const lats = DISTRICTS.map(d=>d[2]).join(",");
-  const lons = DISTRICTS.map(d=>d[3]).join(",");
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lons}`+
-    `&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code`+
-    `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,wind_gusts_10m_max,sunrise,sunset`+
-    `&forecast_days=8&timezone=Asia%2FKolkata`;
-  const r = await fetch(url);
-  if(!r.ok) throw new Error("open-meteo "+r.status);
-  const j = await r.json();
-  WX = Array.isArray(j)? j : [j];
-
-  /* Optional OpenWeatherMap overlay for hero current conditions */
-  if(USE_OWM){
-    try{
-      const d = DISTRICTS[SRI_IDX];
-      const ow = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${d[2]}&lon=${d[3]}&units=metric&appid=${OWM_KEY}`).then(x=>x.json());
-      if(ow && ow.main){
-        WX[SRI_IDX].current.temperature_2m = ow.main.temp;
-        WX[SRI_IDX].current.apparent_temperature = ow.main.feels_like;
-        WX[SRI_IDX].current.relative_humidity_2m = ow.main.humidity;
-        WX[SRI_IDX].current.wind_speed_10m = ow.wind.speed*3.6;
-      }
-    }catch(e){ console.warn("OWM failed, using Open-Meteo", e); }
-  }
-}
-async function fetchAqi(){
-  try{
-    const d = DISTRICTS[SRI_IDX];
-    const j = await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${d[2]}&longitude=${d[3]}&current=us_aqi`).then(r=>r.json());
-    document.getElementById("nowAqi").textContent = Math.round(j.current.us_aqi);
-  }catch(e){ document.getElementById("nowAqi").textContent = "—"; }
-}
-async function fetchMarine(i){
-  const d = DISTRICTS[i];
-  const j = await fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${d[5]}&longitude=${d[6]}`+
-    `&current=wave_height,wave_period&daily=wave_height_max&forecast_days=2&timezone=Asia%2FKolkata`).then(r=>r.json());
-  return j;
-}
-
-/* ================= RENDER: HERO ================= */
-function fmtTime(iso){ return iso ? iso.slice(11,16) : "--:--"; }
-function renderHero(){
-  const w = WX[SRI_IDX], c = w.current, dy = w.daily, ic = wmo(c.weather_code);
-  document.getElementById("nowTemp").innerHTML = Math.round(c.temperature_2m)+"<sup>°C</sup>";
-  document.getElementById("nowIco").textContent = ic[0];
-  document.getElementById("nowDesc").innerHTML = bi(ic[1], ic[2]) + ` · H ${Math.round(dy.temperature_2m_max[0])}° / L ${Math.round(dy.temperature_2m_min[0])}°`;
-  document.getElementById("nowFeels").textContent = Math.round(c.apparent_temperature)+"°";
-  document.getElementById("nowHum").textContent = Math.round(c.relative_humidity_2m)+"%";
-  document.getElementById("nowWind").textContent = Math.round(c.wind_speed_10m);
-  document.getElementById("nowRise").textContent = fmtTime(dy.sunrise[0]);
-  document.getElementById("nowSet").textContent = fmtTime(dy.sunset[0]);
-  document.getElementById("nowUpdated").textContent = "Updated "+new Date().toLocaleTimeString("en-IN",{hour:'2-digit',minute:'2-digit'});
-}
-
-/* ================= RENDER: DISTRICT GRID + MAP ================= */
-const px = lon => 10+(lon-76.6)/8.4*380;
-const py = lat => 10+(19.4-lat)/6.9*410;
-function renderMap(){
-  const g = document.getElementById("mapDots");
-  g.innerHTML = DISTRICTS.map((d,i)=>{
-    const t = WX ? Math.round(WX[i].current.temperature_2m)+"°" : "";
-    return `<g class="map-dot${i===selDist?' sel':''}" data-i="${i}">
-      <circle class="c" cx="${px(d[3])}" cy="${py(d[2])}" r="5"></circle>
-      <text x="${px(d[3])+8}" y="${py(d[2])+3}">${t}</text></g>`;
-  }).join("");
-  g.querySelectorAll(".map-dot").forEach(el=>el.addEventListener("click",()=>selectDistrict(+el.dataset.i)));
-}
-function renderGrid(){
-  const grid = document.getElementById("distGrid");
-  grid.innerHTML = DISTRICTS.map((d,i)=>{
-    const w = WX[i], c = w.current, dy = w.daily, ic = wmo(c.weather_code);
-    return `<div class="dcard glass${i===selDist?' sel':''}" data-i="${i}">
-      <h4>${bi(d[0],d[1])}</h4>
-      <div class="dtemp">${Math.round(c.temperature_2m)}°</div>
-      <div class="dico">${ic[0]}</div>
-      <div class="dmeta"><span>🌧️ ${dy.precipitation_probability_max[0] ?? 0}%</span><span>💨 ${Math.round(c.wind_speed_10m)} km/h</span></div>
-    </div>`;
-  }).join("");
-  grid.querySelectorAll(".dcard").forEach(el=>el.addEventListener("click",()=>selectDistrict(+el.dataset.i)));
-}
-const DAYS_EN=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"], DAYS_TE=["ఆది","సోమ","మంగళ","బుధ","గురు","శుక్ర","శని"];
-function dayName(iso,k){ const d=new Date(iso+"T00:00:00"); return k==="te"?DAYS_TE[d.getDay()]:DAYS_EN[d.getDay()]; }
-function selectDistrict(i){
-  selDist = i;
-  renderGrid(); renderMap();
-  const w = WX[i], dy = w.daily, c = w.current, ic = wmo(c.weather_code);
-  const box = document.getElementById("dist-detail");
-  box.classList.add("on");
-  document.getElementById("ddName").innerHTML = "📍 "+bi(DISTRICTS[i][0],DISTRICTS[i][1]);
-  document.getElementById("ddNow").innerHTML = `${ic[0]} ${Math.round(c.temperature_2m)}°C · ` + bi(ic[1],ic[2]);
-  document.getElementById("ddDays").innerHTML = dy.time.slice(0,5).map((t,k)=>`
-    <div class="dd-day">
-      <div class="d">${bi(dayName(t,'en'),dayName(t,'te'))}</div>
-      <div class="i">${wmo(dy.weather_code[k])[0]}</div>
-      <div class="t">${Math.round(dy.temperature_2m_max[k])}° <span style="color:var(--txt2)">${Math.round(dy.temperature_2m_min[k])}°</span></div>
-      <div class="r">🌧️ ${dy.precipitation_probability_max[k] ?? 0}% · 💨 ${Math.round(dy.wind_gusts_10m_max[k])}</div>
-    </div>`).join("");
-  if(i!==+document.getElementById("fcDist").value){ document.getElementById("fcDist").value = i; renderForecast(); }
-  box.scrollIntoView({behavior:"smooth",block:"nearest"});
-}
-
-/* ================= RENDER: FORECAST ================= */
-function fillSelects(){
-  const opts = DISTRICTS.map((d,i)=>`<option value="${i}">${d[0]} / ${d[1]}</option>`).join("");
-  ["fcDist","rytuDist"].forEach(id=>{ const s=document.getElementById(id); s.innerHTML=opts; s.value=SRI_IDX; });
-  const sea = document.getElementById("seaDist");
-  sea.innerHTML = DISTRICTS.map((d,i)=>d[4]?`<option value="${i}">${d[0]} / ${d[1]}</option>`:"").join("");
-  sea.value = SRI_IDX;
-}
-function renderForecast(){
-  const i = +document.getElementById("fcDist").value, dy = WX[i].daily;
-  document.getElementById("fcScroll").innerHTML = dy.time.map((t,k)=>{
-    const ic = wmo(dy.weather_code[k]);
-    return `<div class="fc-card glass">
-      <div class="day">${k===0?bi("Today","నేడు"):bi(dayName(t,'en'),dayName(t,'te'))}</div>
-      <div class="date">${t.slice(8,10)}/${t.slice(5,7)}</div>
-      <div class="fico" style="animation-delay:${k*.25}s">${ic[0]}</div>
-      <div class="mx">${Math.round(dy.temperature_2m_max[k])}°</div>
-      <div class="mn">${Math.round(dy.temperature_2m_min[k])}°</div>
-      <div class="row"><span>🌧️</span><b>${dy.precipitation_probability_max[k] ?? 0}%</b></div>
-      <div class="row"><span>💨 ${bi("Gust","గాలులు")}</span><b>${Math.round(dy.wind_gusts_10m_max[k])} km/h</b></div>
-      <div class="row"><span>💧</span><b>${(dy.precipitation_sum[k]??0).toFixed(1)} mm</b></div>
-    </div>`;
-  }).join("");
-  renderChart(i);
-}
-function renderChart(i){
-  const dy = WX[i].daily, ctx = document.getElementById("tempChart");
-  const labels = dy.time.map(t=>t.slice(8,10)+"/"+t.slice(5,7));
-  if(chart) chart.destroy();
-  chart = new Chart(ctx,{type:"line",data:{labels,datasets:[
-    {label:"Max °C",data:dy.temperature_2m_max,borderColor:"#FFC300",backgroundColor:"rgba(255,195,0,.12)",fill:true,tension:.4,pointRadius:4},
-    {label:"Min °C",data:dy.temperature_2m_min,borderColor:"#00C9FF",backgroundColor:"rgba(0,201,255,.10)",fill:true,tension:.4,pointRadius:4}
-  ]},options:{plugins:{legend:{labels:{color:getComputedStyle(document.body).getPropertyValue("--txt2")}}},
-    scales:{x:{ticks:{color:"#8aa0c4"},grid:{color:"rgba(140,160,200,.08)"}},y:{ticks:{color:"#8aa0c4"},grid:{color:"rgba(140,160,200,.08)"}}}}});
-}
-
-/* ================= RYTU VANI ================= */
-function renderRytu(){
-  const i = +document.getElementById("rytuDist").value, w = WX[i], dy = w.daily, c = w.current;
-  const rain5 = dy.precipitation_sum.slice(0,5).reduce((a,b)=>a+(b||0),0);
-  const probToday = dy.precipitation_probability_max[0]||0;
-  const gustToday = dy.wind_gusts_10m_max[0]||0;
-  const tmax = dy.temperature_2m_max[0], hum = c.relative_humidity_2m;
-  const prob3 = Math.max(...dy.precipitation_probability_max.slice(0,3));
-
-  document.getElementById("rytuAgg").innerHTML =
-    `<div class="a"><b>${rain5.toFixed(0)} mm</b><span>${bi("Rain next 5 days","5 రోజుల వర్షం")}</span></div>
-     <div class="a"><b>${probToday}%</b><span>${bi("Rain chance today","నేడు వర్ష అవకాశం")}</span></div>
-     <div class="a"><b>${Math.round(gustToday)} km/h</b><span>${bi("Wind gusts","గాలుల వేగం")}</span></div>
-     <div class="a"><b>${Math.round(tmax)}°C</b><span>${bi("Max temp","గరిష్ట ఉష్ణోగ్రత")}</span></div>
-     <div class="a"><b>${Math.round(hum)}%</b><span>${bi("Humidity","తేమ")}</span></div>`;
-
-  const sprayOK = probToday<30 && gustToday<25;
-  const ops = [
-    ["🧴", sprayOK
-      ? bi("<b>Spraying: GOOD ✅</b><span>Low rain chance & calm winds today — pesticide/fertilizer spray can be done.</span>","<b>మందు కొట్టడం: అనుకూలం ✅</b><span>నేడు వర్ష అవకాశం తక్కువ, గాలులు శాంతం — మిర్చి/పంటలకు మందు కొట్టవచ్చు.</span>")
-      : bi("<b>Spraying: AVOID ❌</b><span>Rain or strong winds expected — spray will wash off / drift. Wait for a clear window.</span>","<b>మందు కొట్టడం: వద్దు ❌</b><span>వర్షం లేదా బలమైన గాలుల అవకాశం — మందు కొట్టొద్దు, అనుకూల సమయం కోసం ఆగండి.</span>")],
-    ["🌾", rain5>=40
-      ? bi("<b>Sowing / Transplanting: FAVOURABLE ✅</b><span>Good rainfall expected (≥40mm in 5 days). Paddy transplanting (vari) conditions are good.</span>","<b>విత్తనం / నాట్లు: అనుకూలం ✅</b><span>మంచి వర్షాలు (5 రోజుల్లో ≥40mm). వరి నాట్లకు పరిస్థితులు అనుకూలం.</span>")
-      : rain5>=15
-      ? bi("<b>Sowing: MODERATE ⚠️</b><span>Some rain expected — sow only with assured irrigation backup.</span>","<b>విత్తనం: ఓ మోస్తరు ⚠️</b><span>కొంత వర్షం మాత్రమే — నీటి వసతి ఉంటేనే విత్తండి.</span>")
-      : bi("<b>Sowing: DELAY ❌</b><span>Very little rain in next 5 days — delay rain-fed sowing, plan irrigation.</span>","<b>విత్తనం: ఆలస్యం చేయండి ❌</b><span>వచ్చే 5 రోజుల్లో వర్షం చాలా తక్కువ — వర్షాధార విత్తనం వాయిదా వేయండి.</span>")],
-    ["🌻", prob3>=60
-      ? bi("<b>Harvesting: HURRY ⚠️</b><span>High rain chance in next 3 days — harvest mature crops early & move produce to covered storage.</span>","<b>కోత: త్వరపడండి ⚠️</b><span>3 రోజుల్లో వర్ష అవకాశం ఎక్కువ — పండిన పంటను ముందుగా కోసి, సురక్షిత గోదాముకు తరలించండి.</span>")
-      : bi("<b>Harvesting: SAFE ✅</b><span>Dry spell ahead — good window for harvesting and open-yard drying.</span>","<b>కోత: అనుకూలం ✅</b><span>పొడి వాతావరణం — కోత & ఆరబెట్టడానికి మంచి సమయం.</span>")],
-    ["💧", rain5<10
-      ? bi("<b>Irrigation: NEEDED</b><span>Almost no rain ahead — schedule irrigation; mulch to retain soil moisture.</span>","<b>నీటి తడి: అవసరం</b><span>వర్షం లేదు — తడులు ఇవ్వండి; నేల తేమ కోసం మల్చింగ్ చేయండి.</span>")
-      : bi("<b>Irrigation: HOLD</b><span>Expected rainfall should cover crop water needs — avoid over-watering.</span>","<b>నీటి తడి: ఆపండి</b><span>రాబోయే వర్షాలు సరిపోతాయి — అధిక తడులు వద్దు.</span>")]
-  ];
-  document.getElementById("rytuOps").innerHTML = ops.map(o=>`<div class="adv-item"><span class="e">${o[0]}</span><div>${o[1]}</div></div>`).join("");
-
-  const crop = [];
-  if(tmax>=40) crop.push(["🥵",bi("<b>Heat stress alert</b><span>Max temp ≥40°C — irrigate in evening, provide shade nets for vegetables & chilli nurseries.</span>","<b>వేడి ఒత్తిడి హెచ్చరిక</b><span>ఉష్ణోగ్రత ≥40°C — సాయంత్రం తడులు ఇవ్వండి, మిర్చి నారుమళ్లకు షేడ్ నెట్ వాడండి.</span>")]);
-  if(hum>=85 && tmax>=28) crop.push(["🍄",bi("<b>Fungus / pest watch (Mirchi, Paddy, Cotton)</b><span>High humidity — watch for blast, leaf spot & sucking pests. Scout fields daily.</span>","<b>తెగుళ్ల హెచ్చరిక (మిర్చి, వరి, పత్తి)</b><span>అధిక తేమ — అగ్గి తెగులు, ఆకుమచ్చ & రసం పీల్చే పురుగులను గమనించండి.</span>")]);
-  if(rain5>=80) crop.push(["🌊",bi("<b>Drainage alert</b><span>Heavy rain expected — clear field drains; protect harvested produce & fertilizer stock.</span>","<b>మురుగు నీటి హెచ్చరిక</b><span>భారీ వర్షాలు — కాలువలు శుభ్రం చేయండి; పంట & ఎరువులను కాపాడుకోండి.</span>")]);
-  if(gustToday>=40) crop.push(["🌬️",bi("<b>Wind alert for banana/papaya</b><span>Strong gusts — stake tall crops, delay drone/knapsack spraying.</span>","<b>అరటి/బొప్పాయికి గాలుల హెచ్చరిక</b><span>బలమైన గాలులు — ఊతలు ఇవ్వండి, స్ప్రేయింగ్ వాయిదా వేయండి.</span>")]);
-  if(!crop.length) crop.push(["✅",bi("<b>Normal conditions</b><span>No major weather stress for crops in this district. Continue routine operations.</span>","<b>సాధారణ పరిస్థితులు</b><span>ఈ జిల్లాలో పంటలకు పెద్ద ప్రమాదం లేదు. యథావిధిగా పనులు కొనసాగించండి.</span>")]);
-  crop.push(["📞",bi("<b>Kisan Call Centre: 1800-180-1551</b><span>For crop-specific advisories also see your local KVK / ANGRAU bulletins.</span>","<b>కిసాన్ కాల్ సెంటర్: 1800-180-1551</b><span>పంట వారీ సలహాల కోసం KVK / ANGRAU బులెటిన్లు చూడండి.</span>")]);
-  document.getElementById("rytuCrop").innerHTML = crop.map(o=>`<div class="adv-item"><span class="e">${o[0]}</span><div>${o[1]}</div></div>`).join("");
-}
-
-/* ================= MATSYAKARA VANI ================= */
-async function renderSea(){
-  const i = +document.getElementById("seaDist").value;
-  const w = WX[i], gust = w.daily.wind_gusts_10m_max[0]||0, wind = w.current.wind_speed_10m;
-  let wave = null, period = null;
-  try{ const m = await fetchMarine(i); wave = m.daily.wave_height_max[0]; period = m.current.wave_period; }catch(e){ console.warn("marine",e); }
-
-  const banner = document.getElementById("seaBanner");
-  const unsafe = (wave!==null && wave>2.5) || gust>45;
-  const caution = !unsafe && ((wave!==null && wave>1.5) || gust>35);
-  banner.className = "safe-banner "+(unsafe?"no":"ok");
-  document.getElementById("seaBannerIco").textContent = unsafe?"⛔":caution?"⚠️":"✅";
-  document.getElementById("seaBannerTxt").innerHTML = unsafe
-    ? bi("FISHING: NOT SAFE — do not venture into the sea. High waves / strong winds.","చేపల వేట: సురక్షితం కాదు — సముద్రంలోకి వెళ్లవద్దు. ఎత్తైన అలలు / బలమైన గాలులు.")
-    : caution
-    ? bi("FISHING: CAUTION — rough patches possible, stay close to shore & monitor INCOIS.","చేపల వేట: జాగ్రత్త — తీరానికి దగ్గరగా ఉండండి, INCOIS హెచ్చరికలు గమనించండి.")
-    : bi("FISHING: SAFE — sea conditions are normal along this coast today.","చేపల వేట: సురక్షితం — నేడు ఈ తీరంలో సముద్రం సాధారణంగా ఉంది.");
-
-  document.getElementById("seaAgg").innerHTML =
-    `<div class="a"><b>${wave!==null?wave.toFixed(1)+" m":"—"}</b><span>${bi("Max wave height","గరిష్ట అల ఎత్తు")}</span></div>
-     <div class="a"><b>${period!==null?period.toFixed(0)+" s":"—"}</b><span>${bi("Wave period","అల వ్యవధి")}</span></div>
-     <div class="a"><b>${Math.round(wind)} km/h</b><span>${bi("Coastal wind","తీర గాలి")}</span></div>
-     <div class="a"><b>${Math.round(gust)} km/h</b><span>${bi("Max gusts","గరిష్ట గాలులు")}</span></div>`;
-
-  const adv = [];
-  if(unsafe) adv.push(["⛔",bi("<b>Do not venture</b><span>Waves above 2.5m or gusts above 45 km/h — boats should return to harbour.</span>","<b>వేటకు వెళ్లవద్దు</b><span>అలలు 2.5m పైన లేదా గాలులు 45 km/h పైన — పడవలు తీరానికి తిరిగి రావాలి.</span>")]);
-  else if(caution) adv.push(["⚠️",bi("<b>Stay near shore</b><span>Moderate swell — small boats avoid deep-sea trips; carry life jackets & GPS.</span>","<b>తీరానికి దగ్గరగా ఉండండి</b><span>మోస్తరు అలలు — చిన్న పడవలు లోతు సముద్రానికి వెళ్లొద్దు; లైఫ్ జాకెట్లు తప్పనిసరి.</span>")]);
-  else adv.push(["✅",bi("<b>Normal sea</b><span>Conditions fine for fishing. Still carry life jackets, DAT/transponder & check wind before return trip.</span>","<b>సాధారణ సముద్రం</b><span>వేటకు అనుకూలం. లైఫ్ జాకెట్లు, ట్రాన్స్‌పాండర్ తీసుకెళ్లండి.</span>")]);
-  adv.push(["🌀",bi("<b>Low-pressure watch</b><span>Check the Windy map for circulations over the Bay of Bengal. During cyclone alerts, IMD/INCOIS warnings override everything here.</span>","<b>అల్పపీడన పరిశీలన</b><span>బంగాళాఖాతంలో ఆవర్తనాల కోసం Windy మ్యాప్ చూడండి. తుఫాను హెచ్చరికల సమయంలో IMD/INCOIS హెచ్చరికలే అంతిమం.</span>")]);
-  adv.push(["📻",bi("<b>Emergency: 1093 / Coast Guard 1554</b><span>Toll-free marine emergency & search-rescue numbers.</span>","<b>అత్యవసరం: 1093 / కోస్ట్ గార్డ్ 1554</b><span>సముద్ర అత్యవసర సహాయ నంబర్లు.</span>")]);
-  document.getElementById("seaAdv").innerHTML = adv.map(o=>`<div class="adv-item"><span class="e">${o[0]}</span><div>${o[1]}</div></div>`).join("");
-}
-
-/* ================= ALERTS + TICKER ================= */
-function renderAlerts(){
-  const alerts = [];
-  WX.forEach((w,i)=>{
-    const n = DISTRICTS[i][0], nte = DISTRICTS[i][1], dy = w.daily, c = w.current;
-    const feels = c.apparent_temperature, code = c.weather_code;
-    if(feels>=45) alerts.push(["dang","🥵",`<b>${n}:</b> ${bi(`Extreme heat — real-feel ${Math.round(feels)}°C. Avoid 12–4pm sun.`,`తీవ్ర వేడి — రియల్-ఫీల్ ${Math.round(feels)}°C (${nte}). మధ్యాహ్నం ఎండలో వెళ్లొద్దు.`)}`]);
-    else if(dy.temperature_2m_max[0]>=42) alerts.push(["warn","☀️",`<b>${n}:</b> ${bi(`Heatwave-like: max ${Math.round(dy.temperature_2m_max[0])}°C today.`,`వడగాలి: నేడు గరిష్టం ${Math.round(dy.temperature_2m_max[0])}°C (${nte}).`)}`]);
-    if(code>=95) alerts.push(["dang","⛈️",`<b>${n}:</b> ${bi("Thunderstorm active now — stay indoors, unplug electronics.",`ఇప్పుడు ఉరుములతో వర్షం (${nte}) — ఇంట్లోనే ఉండండి.`)}`]);
-    else if((dy.precipitation_probability_max[0]||0)>=80 && (dy.precipitation_sum[0]||0)>=15) alerts.push(["warn","🌧️",`<b>${n}:</b> ${bi(`Heavy rain likely today (${dy.precipitation_probability_max[0]}%, ~${dy.precipitation_sum[0].toFixed(0)}mm).`,`నేడు భారీ వర్షం అవకాశం (${nte}) — ${dy.precipitation_probability_max[0]}%.`)}`]);
-    if((dy.wind_gusts_10m_max[0]||0)>=55) alerts.push(["warn","🌬️",`<b>${n}:</b> ${bi(`Squally winds up to ${Math.round(dy.wind_gusts_10m_max[0])} km/h.`,`బలమైన గాలులు ${Math.round(dy.wind_gusts_10m_max[0])} km/h వరకు (${nte}).`)}`]);
-  });
-  const list = document.getElementById("alert-list");
-  list.innerHTML = alerts.length
-    ? alerts.slice(0,8).map(a=>`<div class="al ${a[0]}"><span class="e">${a[1]}</span><div>${a[2]}</div></div>`).join("")
-    : `<div class="al ok"><span class="e">✅</span><div>${bi("No severe weather alerts across AP right now. Pleasant day!","ప్రస్తుతం AP అంతటా తీవ్ర హెచ్చరికలు లేవు. మంచి రోజు!")}</div></div>`;
-
-  const tick = alerts.length
-    ? alerts.map(a=>a[1]+" "+a[2].replace(/<[^>]+>/g," ")).join(" &nbsp;·&nbsp; ")
-    : "✅ No severe alerts across Andhra Pradesh · అన్ని జిల్లాల్లో సాధారణ వాతావరణం · Follow @srikakulam_weatherman for live updates";
-  document.getElementById("tickerIn").innerHTML = `<span>${tick}</span><span>${tick}</span>`;
-}
-
-/* ================= MASTER REFRESH ================= */
-async function refresh(){
-  try{
-    await fetchAll();
-    renderHero(); renderGrid(); renderMap(); renderForecast(); renderRytu(); renderAlerts(); renderSea();
-    document.getElementById("lastRefresh").textContent = new Date().toLocaleTimeString("en-IN",{hour:'2-digit',minute:'2-digit'});
-  }catch(e){
-    console.error(e);
-    document.getElementById("nowDesc").innerHTML = bi("⚠️ Could not load live data — check connection & retry.","⚠️ లైవ్ డేటా లోడ్ కాలేదు — కనెక్షన్ చూసి మళ్లీ ప్రయత్నించండి.");
-  }
-}
-
-/* ================= UI: clock / theme / lang / reveal ================= */
-setInterval(()=>{ document.getElementById("clock").textContent =
-  new Date().toLocaleTimeString("en-IN",{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true})+" IST"; },1000);
-
-const themeTgl = document.getElementById("themeTgl");
-function setTheme(t){ document.documentElement.dataset.theme=t; themeTgl.textContent = t==="light"?"☀️":"🌙"; try{localStorage.setItem("swm-theme",t)}catch(e){} }
-themeTgl.onclick = ()=> setTheme(document.documentElement.dataset.theme==="light"?"dark":"light");
-try{ setTheme(localStorage.getItem("swm-theme")||"dark"); }catch(e){ setTheme("dark"); }
-
-const langTgl = document.getElementById("langTgl");
-function setLang(l){ document.body.classList.toggle("te", l==="te"); document.documentElement.lang = l==="te"?"te":"en"; try{localStorage.setItem("swm-lang",l)}catch(e){} }
-langTgl.onclick = ()=> setLang(document.body.classList.contains("te")?"en":"te");
-try{ setLang(localStorage.getItem("swm-lang")||"en"); }catch(e){}
-
-const io = new IntersectionObserver(es=>es.forEach(e=>e.isIntersecting&&e.target.classList.add("in")),{threshold:.08});
-document.querySelectorAll("section .wrap > *").forEach(el=>{ el.classList.add("reveal"); io.observe(el); });
-
-document.getElementById("fcDist").addEventListener("change",renderForecast);
-document.getElementById("rytuDist").addEventListener("change",renderRytu);
-document.getElementById("seaDist").addEventListener("change",renderSea);
-
-/* ================= THREE.JS HERO ================= */
-(function(){
-  if(!window.THREE) return;
-  const box = document.getElementById("three-bg");
-  const scene = new THREE.Scene();
-  const cam = new THREE.PerspectiveCamera(60, box.clientWidth/box.clientHeight, .1, 100);
-  cam.position.z = 7;
-  const ren = new THREE.WebGLRenderer({alpha:true, antialias:true});
-  ren.setSize(box.clientWidth, box.clientHeight);
-  ren.setPixelRatio(Math.min(devicePixelRatio,2));
-  box.appendChild(ren.domElement);
-
-  /* dotted globe */
-  const globe = new THREE.Group();
-  const gGeo = new THREE.SphereGeometry(2.6, 40, 40);
-  const pts = new THREE.Points(gGeo, new THREE.PointsMaterial({color:0x185ADB, size:.035, transparent:true, opacity:.85}));
-  globe.add(pts);
-  globe.add(new THREE.Mesh(gGeo, new THREE.MeshBasicMaterial({color:0x0A1931, transparent:true, opacity:.35})));
-  /* AP marker */
-  const marker = new THREE.Mesh(new THREE.SphereGeometry(.09,16,16), new THREE.MeshBasicMaterial({color:0x00C9FF}));
-  const lat=16.5*Math.PI/180, lon=80.6*Math.PI/180;
-  marker.position.set(2.62*Math.cos(lat)*Math.sin(lon), 2.62*Math.sin(lat), 2.62*Math.cos(lat)*Math.cos(lon));
-  globe.add(marker);
-  const ring = new THREE.Mesh(new THREE.RingGeometry(.14,.2,32), new THREE.MeshBasicMaterial({color:0x00C9FF,side:THREE.DoubleSide,transparent:true,opacity:.7}));
-  ring.position.copy(marker.position); ring.lookAt(0,0,0);
-  globe.add(ring);
-  globe.position.x = 2.2; globe.rotation.y = -.9;
-  scene.add(globe);
-
-  /* clouds (sprites from canvas) */
-  const cv = document.createElement("canvas"); cv.width=cv.height=128;
-  const cx = cv.getContext("2d");
-  const grd = cx.createRadialGradient(64,64,8,64,64,60);
-  grd.addColorStop(0,"rgba(255,255,255,.9)"); grd.addColorStop(1,"rgba(255,255,255,0)");
-  cx.fillStyle=grd; cx.fillRect(0,0,128,128);
-  const cTex = new THREE.CanvasTexture(cv);
-  const clouds = [];
-  for(let i=0;i<14;i++){
-    const s = new THREE.Sprite(new THREE.SpriteMaterial({map:cTex, transparent:true, opacity:.16+Math.random()*.2, color:0x9fd8ff}));
-    s.scale.setScalar(1.2+Math.random()*2.6);
-    s.position.set((Math.random()-0.5)*14, (Math.random()-0.5)*7, (Math.random()-0.5)*3-1);
-    s.userData.v = .0015+Math.random()*.003;
-    scene.add(s); clouds.push(s);
-  }
-
-  /* rain particles */
-  const rN = 900, rPos = new Float32Array(rN*3);
-  for(let i=0;i<rN;i++){ rPos[i*3]=(Math.random()-.5)*16; rPos[i*3+1]=Math.random()*10-5; rPos[i*3+2]=(Math.random()-.5)*4-1; }
-  const rGeo = new THREE.BufferGeometry();
-  rGeo.setAttribute("position", new THREE.BufferAttribute(rPos,3));
-  const rain = new THREE.Points(rGeo, new THREE.PointsMaterial({color:0x00C9FF, size:.03, transparent:true, opacity:.55}));
-  scene.add(rain);
-
-  /* lightning flash on hover */
-  const flash = new THREE.PointLight(0xaaddff, 0, 30);
-  flash.position.set(0,3,2); scene.add(flash);
-  let flashT = 0;
-  document.getElementById("hero").addEventListener("pointermove", ()=>{ if(Math.random()<.006) flashT = 1; });
-
-  let mx=0,my=0;
-  addEventListener("pointermove",e=>{ mx=(e.clientX/innerWidth-.5); my=(e.clientY/innerHeight-.5); });
-  addEventListener("resize",()=>{ cam.aspect=box.clientWidth/box.clientHeight; cam.updateProjectionMatrix(); ren.setSize(box.clientWidth,box.clientHeight); });
-
-  (function loop(){
-    requestAnimationFrame(loop);
-    globe.rotation.y += .0016;
-    clouds.forEach(s=>{ s.position.x += s.userData.v; if(s.position.x>8) s.position.x=-8; });
-    const p = rGeo.attributes.position.array;
-    for(let i=0;i<rN;i++){ p[i*3+1]-=.045; if(p[i*3+1]<-5) p[i*3+1]=5; }
-    rGeo.attributes.position.needsUpdate = true;
-    if(flashT>0){ flash.intensity = flashT*6; flashT-=.06; } else flash.intensity = 0;
-    cam.position.x += (mx*.8-cam.position.x)*.04;
-    cam.position.y += (-my*.5-cam.position.y)*.04;
-    cam.lookAt(1,0,0);
-    ren.render(scene,cam);
-  })();
-})();
-
-/* ================= PWA ================= */
-if("serviceWorker" in navigator && location.protocol.startsWith("http")){
-  addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
-}
-
-/* ================= BOOT (v1.0) ================= */
-fillSelects(); refresh(); fetchAqi();
-setInterval(refresh, 10*60*1000);      // auto-refresh every 10 minutes
-setInterval(fetchAqi, 30*60*1000);
-</script>
-
+<script src="app.js" defer></script>
 </body>
 </html>
