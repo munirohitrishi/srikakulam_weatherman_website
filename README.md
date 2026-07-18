@@ -1,6 +1,6 @@
-# Srikakulam Weatherman — Live AP Weather Hub
+# Srikakulam Weatherman — Mausam Vani (All-India Live Weather)
 
-Single-file live weather site (`index.html`) for all **26 districts of Andhra Pradesh**, built for [@srikakulam_weatherman](https://www.instagram.com/srikakulam_weatherman). Bilingual (Telugu / English), dark + light mode, glassmorphism UI, Three.js animated hero, PWA installable.
+Live weather site (`index.html` + `app.js`) built for [@srikakulam_weatherman](https://www.instagram.com/srikakulam_weatherman): **all-India coverage** (search any city/district, browse by state, auto-detect via geolocation with reverse geocoding) plus the flagship **26-district AP grid**. Bilingual (Telugu / English), weather-aware dynamic themes, glassmorphism UI, Cyclone Path Predictor for the whole Indian coastline, PWA installable.
 
 > The previous single-district version is preserved as `index-old.html` (with its `parts/` and `netlify/` folders).
 

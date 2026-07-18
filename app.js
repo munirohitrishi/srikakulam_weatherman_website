@@ -1,5 +1,5 @@
 /* ================================================================
-   SRIKAKULAM WEATHERMAN v2 — app.js
+   SRIKAKULAM WEATHERMAN — MAUSAM VANI (All-India) — app.js
    ----------------------------------------------------------------
    OPENWEATHER KEY (optional): paste your key below. While it says
    "YOUR_OPENWEATHER_API_KEY", the site automatically uses
@@ -8,7 +8,7 @@
 const OWM_KEY = "YOUR_OPENWEATHER_API_KEY";
 const USE_OWM = OWM_KEY && !/YOUR_/.test(OWM_KEY);
 
-/* ---------- 26 districts: [name EN, name TE, lat, lon, coastal, sea lat, sea lon] ---------- */
+/* ---------- AP's 26 districts: [EN, TE, lat, lon, coastal, sea lat, sea lon] ---------- */
 const DISTRICTS = [
  ["Alluri Sitharama Raju","అల్లూరి సీతారామరాజు",18.08,82.67,0],
  ["Anakapalli","అనకాపల్లి",17.69,83.00,1,17.5,83.1],
@@ -37,8 +37,32 @@ const DISTRICTS = [
  ["West Godavari","పశ్చిమ గోదావరి",16.54,81.52,1,16.35,81.75],
  ["YSR Kadapa","వైఎస్ఆర్ కడప",14.47,78.82,0]
 ];
-const SRI_IDX = 19;               // Srikakulam = safe default
-let HOME_IDX = SRI_IDX;           // becomes the user's nearest district after geolocation
+const SRI_IDX = 19;                 // Srikakulam = safe default
+let HOME_IDX = SRI_IDX;             // ≥0: AP district index · -1: CUSTOM place anywhere in India
+let CUSTOM = null;                  // {name, admin1, lat, lon, wx} for non-AP home / searched place
+let VIEWED = null;                  // last place shown in the India search card
+
+/* ---------- All Indian states & UTs (capital coords for quick browsing) ---------- */
+const STATES = [
+ ["Andhra Pradesh","Amaravati",16.51,80.52],["Arunachal Pradesh","Itanagar",27.10,93.62],
+ ["Assam","Guwahati",26.14,91.77],["Bihar","Patna",25.59,85.14],
+ ["Chhattisgarh","Raipur",21.25,81.63],["Goa","Panaji",15.49,73.83],
+ ["Gujarat","Gandhinagar",23.22,72.65],["Haryana","Chandigarh",30.73,76.78],
+ ["Himachal Pradesh","Shimla",31.10,77.17],["Jharkhand","Ranchi",23.34,85.31],
+ ["Karnataka","Bengaluru",12.97,77.59],["Kerala","Thiruvananthapuram",8.52,76.94],
+ ["Madhya Pradesh","Bhopal",23.26,77.41],["Maharashtra","Mumbai",19.08,72.88],
+ ["Manipur","Imphal",24.82,93.94],["Meghalaya","Shillong",25.57,91.88],
+ ["Mizoram","Aizawl",23.73,92.72],["Nagaland","Kohima",25.67,94.11],
+ ["Odisha","Bhubaneswar",20.30,85.82],["Punjab","Chandigarh",30.73,76.78],
+ ["Rajasthan","Jaipur",26.91,75.79],["Sikkim","Gangtok",27.33,88.61],
+ ["Tamil Nadu","Chennai",13.08,80.27],["Telangana","Hyderabad",17.38,78.48],
+ ["Tripura","Agartala",23.83,91.28],["Uttar Pradesh","Lucknow",26.85,80.95],
+ ["Uttarakhand","Dehradun",30.32,78.03],["West Bengal","Kolkata",22.57,88.36],
+ ["Delhi (NCT)","New Delhi",28.61,77.21],["Jammu & Kashmir","Srinagar",34.08,74.80],
+ ["Ladakh","Leh",34.16,77.58],["Puducherry","Puducherry",11.93,79.83],
+ ["Andaman & Nicobar","Port Blair",11.62,92.73],["Chandigarh","Chandigarh",30.73,76.78],
+ ["DNH & Daman-Diu","Daman",20.40,72.85],["Lakshadweep","Kavaratti",10.57,72.64]
+];
 
 /* ---------- WMO weather codes → [icon, EN, TE] ---------- */
 const WMO = {
@@ -65,9 +89,9 @@ let WX = null, selDist = SRI_IDX, chart = null;
    • On success we get { latitude, longitude } from the browser.
    • Open-Meteo:  https://api.open-meteo.com/v1/forecast?latitude=LAT&longitude=LON&current=...
    • OpenWeather: https://api.openweathermap.org/data/2.5/weather?lat=LAT&lon=LON&appid=KEY
-   Here we snap the coords to the NEAREST of the 26 district HQs
-   (haversine distance) so every dashboard (Rytu/Matsya/forecast)
-   switches to the visitor's own district automatically.
+   Inside AP  → we snap to the nearest of the 26 district HQs.
+   Elsewhere  → reverse-geocode the coords (state + district) and
+                fetch weather for the exact point.
    ================================================================ */
 function haversine(a1,o1,a2,o2){
   const R=6371, dA=(a2-a1)*Math.PI/180, dO=(o2-o1)*Math.PI/180;
@@ -77,71 +101,67 @@ function haversine(a1,o1,a2,o2){
 function nearestDistrict(lat,lon){
   let best=0,bd=1e9;
   DISTRICTS.forEach((d,i)=>{ const k=haversine(lat,lon,d[2],d[3]); if(k<bd){bd=k;best=i;} });
-  return best;
+  return {idx:best, km:bd};
 }
-/**
- * Requests the user's location. Resolves with {lat, lon} on success.
- * NEVER rejects into a visible error — every failure path (permission
- * denied, position unavailable, timeout, unsupported browser) resolves
- * with null so the caller can silently fall back to Srikakulam.
- */
+/** Resolves {lat, lon} on success; null on ANY failure (denied /
+ *  unavailable / timeout / unsupported) — silent fallback, no alerts. */
 function getUserLocation(){
   return new Promise(resolve=>{
-    if(!("geolocation" in navigator)) return resolve(null);          // unsupported browser
+    if(!("geolocation" in navigator)) return resolve(null);
     navigator.geolocation.getCurrentPosition(
-      pos => resolve({lat:pos.coords.latitude, lon:pos.coords.longitude}), // success → coords
-      err => {
-        // err.code: 1=PERMISSION_DENIED, 2=POSITION_UNAVAILABLE, 3=TIMEOUT
-        console.info("Geolocation fallback → Srikakulam (code "+err.code+")");
-        resolve(null);                                               // silent fallback, no alert
-      },
+      pos => resolve({lat:pos.coords.latitude, lon:pos.coords.longitude}),
+      err => { console.info("Geolocation fallback → Srikakulam (code "+err.code+")"); resolve(null); },
       { timeout:8000, maximumAge:10*60*1000, enableHighAccuracy:false }
     );
   });
 }
+/** Free, keyless reverse geocoding → {place, state} (never throws). */
+async function reverseGeocode(lat,lon){
+  try{
+    const j = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`).then(r=>r.json());
+    return { place: j.city || j.locality || j.principalSubdivision || "My Location",
+             state: j.principalSubdivision || "India" };
+  }catch(e){ return {place:"My Location", state:"India"}; }
+}
 async function useLocation(){
   const loc = await getUserLocation();
-  if(loc){
-    HOME_IDX = nearestDistrict(loc.lat, loc.lon);
-  } // else: HOME_IDX stays Srikakulam — nothing breaks
-  applyHome();
-}
-function applyHome(){
-  $("nowCity").innerHTML = bi(DISTRICTS[HOME_IDX][0], DISTRICTS[HOME_IDX][1]);
-  if(WX){
-    renderHero(); renderTheme();
-    ["fcDist","rytuDist"].forEach(id=>{ $(id).value = HOME_IDX; });
-    renderForecast(); renderRytu();
-    if(DISTRICTS[HOME_IDX][4]){ $("seaDist").value = HOME_IDX; renderSea(); }
+  if(!loc){ applyHome(); return; }                  // silent fallback: Srikakulam
+  const near = nearestDistrict(loc.lat, loc.lon);
+  if(near.km <= 45){                                // inside AP → snap to district
+    HOME_IDX = near.idx; CUSTOM = null;
+    applyHome();
+  }else{                                            // anywhere else in India (or world)
+    const g = await reverseGeocode(loc.lat, loc.lon);
+    await loadPlace({name:g.place, admin1:g.state, lat:loc.lat, lon:loc.lon}, true);
   }
 }
 function initGeoModal(){
   const m = $("geoModal");
   let asked = false;
   try{ asked = localStorage.getItem("swm-geo-asked")==="1"; }catch(e){}
-  if(asked){ useLocation(); return; }           // returning visitor: reuse browser permission state
+  if(asked){ useLocation(); return; }
   m.classList.add("on");
   const done = ()=>{ m.classList.remove("on"); try{localStorage.setItem("swm-geo-asked","1")}catch(e){} };
-  $("geoAllow").onclick = ()=>{ done(); useLocation(); };            // triggers native browser prompt
-  $("geoManual").onclick = ()=>{ done();                             // manual: jump to district grid
-    document.querySelector("#districts").scrollIntoView({behavior:"smooth"}); };
+  $("geoAllow").onclick = ()=>{ done(); useLocation(); };            // native browser prompt
+  $("geoManual").onclick = ()=>{ done();
+    document.querySelector("#india").scrollIntoView({behavior:"smooth"}); };
 }
 
 /* ================= FETCH ENGINE (Open-Meteo primary, OWM optional) ================= */
+const OM_PARAMS = `&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code,is_day`+
+  `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,wind_gusts_10m_max,sunrise,sunset`+
+  `&forecast_days=8&timezone=auto`;
 async function fetchAll(){
   const lats = DISTRICTS.map(d=>d[2]).join(",");
   const lons = DISTRICTS.map(d=>d[3]).join(",");
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lons}`+
-    `&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code,is_day`+
-    `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,wind_gusts_10m_max,sunrise,sunset`+
-    `&forecast_days=8&timezone=Asia%2FKolkata`;
-  const r = await fetch(url);
+  const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lons}${OM_PARAMS}`);
   if(!r.ok) throw new Error("open-meteo "+r.status);
   const j = await r.json();
   WX = Array.isArray(j)? j : [j];
+  if(CUSTOM){ try{ CUSTOM.wx = await fetchPoint(CUSTOM.lat, CUSTOM.lon); }catch(e){} }
 
-  if(USE_OWM){
-    /* Optional OpenWeatherMap overlay for the home district's current conditions */
+  if(USE_OWM && HOME_IDX>=0){
+    /* Optional OpenWeatherMap overlay for home current conditions */
     try{
       const d = DISTRICTS[HOME_IDX];
       const ow = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${d[2]}&lon=${d[3]}&units=metric&appid=${OWM_KEY}`).then(x=>x.json());
@@ -154,18 +174,29 @@ async function fetchAll(){
     }catch(e){ console.warn("OWM failed, using Open-Meteo", e); }
   }
 }
+async function fetchPoint(lat,lon){
+  const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}${OM_PARAMS}`);
+  if(!r.ok) throw new Error("open-meteo point "+r.status);
+  return r.json();
+}
+function homeCoords(){ return HOME_IDX>=0 ? {lat:DISTRICTS[HOME_IDX][2], lon:DISTRICTS[HOME_IDX][3]} : {lat:CUSTOM.lat, lon:CUSTOM.lon}; }
+function homeWx(){ return HOME_IDX>=0 ? WX[HOME_IDX] : (CUSTOM && CUSTOM.wx); }
 async function fetchAqi(){
   try{
-    const d = DISTRICTS[HOME_IDX];
-    const j = await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${d[2]}&longitude=${d[3]}&current=us_aqi`).then(r=>r.json());
+    const {lat,lon} = homeCoords();
+    const j = await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&current=us_aqi`).then(r=>r.json());
     $("nowAqi").textContent = Math.round(j.current.us_aqi);
   }catch(e){ $("nowAqi").textContent = "—"; }
 }
 async function fetchMarine(i){
   const d = DISTRICTS[i];
   return fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${d[5]}&longitude=${d[6]}`+
-    `&current=wave_height,wave_period&daily=wave_height_max&forecast_days=2&timezone=Asia%2FKolkata`).then(r=>r.json());
+    `&current=wave_height,wave_period&daily=wave_height_max&forecast_days=2&timezone=auto`).then(r=>r.json());
 }
+/* helpers to resolve select values (-1 = custom place) */
+const dailyOf = i => i<0 ? CUSTOM.wx.daily : WX[i].daily;
+const currentOf = i => i<0 ? CUSTOM.wx.current : WX[i].current;
+const nameOf = i => i<0 ? `${CUSTOM.name}` : DISTRICTS[i][0];
 
 /* ================= DYNAMIC WEATHER THEME + SCENE ================= */
 function themeFor(code,isDay){
@@ -176,20 +207,17 @@ function themeFor(code,isDay){
   return "theme-cloudy";
 }
 function renderTheme(){
-  const c = WX[HOME_IDX].current;
-  const t = themeFor(c.weather_code, c.is_day);
+  const w = homeWx(); if(!w) return;
+  const t = themeFor(w.current.weather_code, w.current.is_day);
   document.body.classList.remove("theme-sunny","theme-cloudy","theme-rainy","theme-thunder","theme-night");
   document.body.classList.add(t);
-  if(window.__setRain) window.__setRain(t==="theme-rainy"||t==="theme-thunder");
 }
 function buildScene(){
-  const stars = $("stars");
-  stars.innerHTML = Array.from({length:70},()=>{
+  $("stars").innerHTML = Array.from({length:70},()=>{
     const x=Math.random()*100, y=Math.random()*60, d=(Math.random()*3).toFixed(2);
     return `<span style="left:${x}%;top:${y}%;animation-delay:${d}s"></span>`;
   }).join("");
-  const rain = $("rainLayer");
-  rain.innerHTML = Array.from({length:46},()=>{
+  $("rainLayer").innerHTML = Array.from({length:46},()=>{
     const x=Math.random()*100, dl=(Math.random()*1.2).toFixed(2), du=(0.8+Math.random()*.7).toFixed(2);
     return `<i style="left:${x}%;animation-delay:${dl}s;animation-duration:${du}s"></i>`;
   }).join("");
@@ -198,7 +226,8 @@ function buildScene(){
 /* ================= HERO ================= */
 const fmtTime = iso => iso ? iso.slice(11,16) : "--:--";
 function renderHero(){
-  const w = WX[HOME_IDX], c = w.current, dy = w.daily, ic = wmo(c.weather_code);
+  const w = homeWx(); if(!w) return;
+  const c = w.current, dy = w.daily, ic = wmo(c.weather_code);
   $("nowTemp").innerHTML = Math.round(c.temperature_2m)+"<sup>°</sup>";
   $("nowIco").textContent = (!c.is_day && c.weather_code<=1) ? "🌙" : ic[0];
   $("nowDesc").innerHTML = bi(ic[1], ic[2]) + ` · H ${Math.round(dy.temperature_2m_max[0])}° / L ${Math.round(dy.temperature_2m_min[0])}°`;
@@ -209,8 +238,88 @@ function renderHero(){
   $("nowSet").textContent = fmtTime(dy.sunset[0]);
   $("nowUpdated").textContent = "Updated "+new Date().toLocaleTimeString("en-IN",{hour:'2-digit',minute:'2-digit'});
 }
+function applyHome(){
+  $("nowCity").innerHTML = HOME_IDX>=0
+    ? bi(DISTRICTS[HOME_IDX][0], DISTRICTS[HOME_IDX][1])
+    : `${CUSTOM.name}, ${CUSTOM.admin1}`;
+  if(!WX) return;
+  refreshSelectOptions();
+  renderHero(); renderTheme();
+  $("fcDist").value = String(HOME_IDX>=0?HOME_IDX:-1);
+  $("rytuDist").value = String(HOME_IDX>=0?HOME_IDX:-1);
+  renderForecast(); renderRytu();
+  if(HOME_IDX>=0 && DISTRICTS[HOME_IDX][4]){ $("seaDist").value = HOME_IDX; renderSea(); }
+  fetchAqi();
+}
 
-/* ================= DISTRICT GRID ================= */
+/* ================= ALL-INDIA SEARCH ================= */
+function initIndiaUI(){
+  const sel = $("stateSel");
+  sel.innerHTML = `<option value="">${"— State / రాష్ట్రం —"}</option>` +
+    STATES.map((s,i)=>`<option value="${i}">${s[0]}</option>`).join("");
+  sel.addEventListener("change", ()=>{
+    if(sel.value==="") return;
+    const s = STATES[+sel.value];
+    loadPlace({name:s[1], admin1:s[0], lat:s[2], lon:s[3]}, false);
+  });
+
+  const inp = $("inSearch"), sug = $("inSug");
+  let t = null;
+  inp.addEventListener("input", ()=>{
+    clearTimeout(t);
+    const q = inp.value.trim();
+    if(q.length<2){ sug.classList.remove("on"); return; }
+    t = setTimeout(async ()=>{
+      try{
+        /* Open-Meteo geocoding: any city/district/village; filtered to India */
+        const j = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=8&language=en&format=json`).then(r=>r.json());
+        const res = (j.results||[]).filter(x=>x.country_code==="IN");
+        sug.innerHTML = res.length
+          ? res.map((x,k)=>`<button data-k="${k}">${x.name}<small>${[x.admin2,x.admin1].filter(Boolean).join(", ")}</small></button>`).join("")
+          : `<button disabled>${"No places found in India"}</button>`;
+        sug.classList.add("on");
+        sug.querySelectorAll("button[data-k]").forEach(b=>b.addEventListener("click",()=>{
+          const x = res[+b.dataset.k];
+          sug.classList.remove("on"); inp.value = x.name;
+          loadPlace({name:x.name, admin1:x.admin1||"India", lat:x.latitude, lon:x.longitude}, false);
+        }));
+      }catch(e){ console.warn("geocoding", e); }
+    }, 350);
+  });
+  document.addEventListener("click", e=>{ if(!sug.contains(e.target) && e.target!==inp) sug.classList.remove("on"); });
+
+  $("inSetHome").addEventListener("click", ()=>{
+    if(!VIEWED) return;
+    CUSTOM = VIEWED; HOME_IDX = -1;
+    applyHome();
+    document.querySelector("#hero").scrollIntoView({behavior:"smooth"});
+  });
+}
+/** Fetch + show a place in the India card. setHome=true also makes it the dashboard home. */
+async function loadPlace(p, setHome){
+  try{
+    p.wx = await fetchPoint(p.lat, p.lon);
+  }catch(e){ console.warn("loadPlace",e); return; }
+  VIEWED = p;
+  const c = p.wx.current, dy = p.wx.daily, ic = wmo(c.weather_code);
+  $("inResult").classList.add("on");
+  $("inName").textContent = "📍 "+p.name;
+  $("inState").textContent = p.admin1||"India";
+  $("inTemp").textContent = Math.round(c.temperature_2m)+"°";
+  $("inIco").textContent = (!c.is_day && c.weather_code<=1)?"🌙":ic[0];
+  $("inDesc").innerHTML = bi(ic[1],ic[2]);
+  $("inMeta").innerHTML = `H ${Math.round(dy.temperature_2m_max[0])}° / L ${Math.round(dy.temperature_2m_min[0])}° · 💧${Math.round(c.relative_humidity_2m)}% · 💨${Math.round(c.wind_speed_10m)} km/h`;
+  $("inDays").innerHTML = dy.time.slice(0,5).map((t,k)=>`
+    <div class="dd-day">
+      <div class="d">${bi(dayName(t,'en'),dayName(t,'te'))}</div>
+      <div class="i">${wmo(dy.weather_code[k])[0]}</div>
+      <div class="t">${Math.round(dy.temperature_2m_max[k])}° <span style="opacity:.6">${Math.round(dy.temperature_2m_min[k])}°</span></div>
+      <div class="r">🌧️ ${dy.precipitation_probability_max[k] ?? 0}%</div>
+    </div>`).join("");
+  if(setHome){ CUSTOM = p; HOME_IDX = -1; applyHome(); }
+}
+
+/* ================= DISTRICT GRID (AP) ================= */
 function renderGrid(){
   const grid = $("distGrid");
   grid.innerHTML = DISTRICTS.map((d,i)=>{
@@ -241,20 +350,26 @@ function selectDistrict(i){
       <div class="t">${Math.round(dy.temperature_2m_max[k])}° <span style="opacity:.6">${Math.round(dy.temperature_2m_min[k])}°</span></div>
       <div class="r">🌧️ ${dy.precipitation_probability_max[k] ?? 0}% · 💨 ${Math.round(dy.wind_gusts_10m_max[k])}</div>
     </div>`).join("");
-  if(i!==+$("fcDist").value){ $("fcDist").value = i; renderForecast(); }
+  if(String(i)!==$("fcDist").value){ $("fcDist").value = String(i); renderForecast(); }
   box.scrollIntoView({behavior:"smooth",block:"nearest"});
 }
 
 /* ================= FORECAST ================= */
-function fillSelects(){
-  const opts = DISTRICTS.map((d,i)=>`<option value="${i}">${d[0]} / ${d[1]}</option>`).join("");
-  ["fcDist","rytuDist"].forEach(id=>{ const s=$(id); s.innerHTML=opts; s.value=HOME_IDX; });
-  const sea = $("seaDist");
+function refreshSelectOptions(){
+  const customOpt = CUSTOM ? `<option value="-1">📍 ${CUSTOM.name}, ${CUSTOM.admin1}</option>` : "";
+  const opts = customOpt + DISTRICTS.map((d,i)=>`<option value="${i}">${d[0]} / ${d[1]}</option>`).join("");
+  ["fcDist","rytuDist"].forEach(id=>{
+    const s=$(id), v=s.value; s.innerHTML=opts;
+    s.value = [...s.options].some(o=>o.value===v)? v : String(HOME_IDX>=0?HOME_IDX:-1);
+  });
+  const sea = $("seaDist"), sv = sea.value;
   sea.innerHTML = DISTRICTS.map((d,i)=>d[4]?`<option value="${i}">${d[0]} / ${d[1]}</option>`:"").join("");
-  sea.value = DISTRICTS[HOME_IDX][4] ? HOME_IDX : SRI_IDX;
+  sea.value = [...sea.options].some(o=>o.value===sv)? sv : String(SRI_IDX);
 }
 function renderForecast(){
-  const i = +$("fcDist").value, dy = WX[i].daily;
+  const i = +$("fcDist").value;
+  if(i<0 && !CUSTOM) return;
+  const dy = dailyOf(i);
   $("fcScroll").innerHTML = dy.time.map((t,k)=>{
     const ic = wmo(dy.weather_code[k]);
     return `<div class="fc-card glass">
@@ -268,10 +383,10 @@ function renderForecast(){
       <div class="row"><span>💧</span><b>${(dy.precipitation_sum[k]??0).toFixed(1)} mm</b></div>
     </div>`;
   }).join("");
-  renderChart(i);
+  renderChart(dy);
 }
-function renderChart(i){
-  const dy = WX[i].daily, ctx = $("tempChart");
+function renderChart(dy){
+  const ctx = $("tempChart");
   if(!window.Chart || !ctx) return;
   const labels = dy.time.map(t=>t.slice(8,10)+"/"+t.slice(5,7));
   if(chart) chart.destroy();
@@ -282,7 +397,7 @@ function renderChart(i){
     scales:{x:{ticks:{color:"#8aa0c4"},grid:{color:"rgba(140,160,200,.1)"}},y:{ticks:{color:"#8aa0c4"},grid:{color:"rgba(140,160,200,.1)"}}}}});
 }
 
-/* ================= CYCLONE BULLETIN & EMERGENCY HUB ================= */
+/* ================= CYCLONE BULLETIN & EMERGENCY HUB + PATH BADGE ================= */
 function renderCyclone(){
   const coastal = DISTRICTS.map((d,i)=>({d,i})).filter(x=>x.d[4]);
   const events = [];
@@ -315,13 +430,20 @@ function renderCyclone(){
     : bi("🟢 Cyclone Bulletin & Emergency Hub — no active warning","🟢 తుఫాను బులెటిన్ & ఎమర్జెన్సీ హబ్ — హెచ్చరిక లేదు");
   const tick = active
     ? "🔴 LIVE: Cyclone/storm warning conditions active for coastal districts · తీరప్రాంత జిల్లాలకు తుఫాను హెచ్చరిక జారీ చేయబడింది · Call 1070 / 1077 for help"
-    : "🟢 No active cyclone warning for AP coast · ప్రస్తుతం తీరప్రాంతానికి తుఫాను హెచ్చరిక లేదు · Bay of Bengal monitored live · Follow @srikakulam_weatherman";
+    : "🟢 No active cyclone warning for the Indian coast · ప్రస్తుతం తీరప్రాంతానికి తుఫాను హెచ్చరిక లేదు · Bay of Bengal & Arabian Sea monitored live · Follow @srikakulam_weatherman";
   $("cycTickerIn").innerHTML = `<span>${tick}</span><span>${tick}</span>`;
+
+  /* Cyclone Path Predictor badge follows live status */
+  const badge = $("cpBadge");
+  if(badge){
+    badge.className = "cp-badge "+(active?"live":"demo");
+    badge.textContent = active ? "⚠ STORM SIGNALS ACTIVE — SEE IMD FOR OFFICIAL TRACK" : "MONITORING · NO ACTIVE CYCLONE";
+  }
 }
 
 /* ================= JALA VANI — DAM TRACKER ================= */
 /* Indicative figures for layout/demo. For live data connect the AP WRIMS feed
-   (apwrims.ap.gov.in) or a scraped govt bulletin API, replacing `pct/inflow/outflow`. */
+   (apwrims.ap.gov.in), replacing `pct/inflow/outflow`. */
 const DAMS = [
  {en:"Srisailam",te:"శ్రీశైలం",river:"Krishna",frl:"885 ft",cap:"215.8 TMC",pct:64,inflow:"1,42,000",outflow:"98,500"},
  {en:"Nagarjuna Sagar",te:"నాగార్జున సాగర్",river:"Krishna",frl:"590 ft",cap:"312.0 TMC",pct:52,inflow:"96,300",outflow:"41,000"},
@@ -349,44 +471,11 @@ function renderJala(){
   }).join("");
 }
 
-/* ================= VIDYUT VANI — LIGHTNING & OUTAGE RISK ================= */
-function renderVidyut(){
-  let cells=0, maxGust=0, hi=[], md=[];
-  WX.forEach((w,i)=>{
-    const g = w.daily.wind_gusts_10m_max[0]||0;
-    if(w.current.weather_code>=95) cells++;
-    if(g>maxGust) maxGust=g;
-    if(g>60) hi.push(i); else if(g>=45) md.push(i);
-  });
-  $("vidCells").innerHTML = cells+`<small> ${bi("active storm cells","యాక్టివ్ స్టార్మ్ సెల్స్")}</small>`;
-  $("vidCellsNote").innerHTML = cells
-    ? bi(`Thunderstorms currently active over ${cells} district(s). Lightning risk — unplug appliances, avoid open fields & trees.`,
-         `${cells} జిల్లాల్లో ఉరుములు యాక్టివ్. మెరుపుల ప్రమాదం — ఉపకరణాలు అన్‌ప్లగ్ చేయండి, ఖాళీ పొలాలు & చెట్ల కింద ఉండొద్దు.`)
-    : bi("No active thunderstorm cells detected across AP right now.","ప్రస్తుతం AP అంతటా ఉరుముల సెల్స్ లేవు.");
-
-  /* Risk score: gusts dominate (grid damage), thunder cells add weight */
-  const risk = Math.min(100, Math.round(maxGust*0.9 + cells*8));
-  $("riskFill").style.width = Math.max(4,risk)+"%";
-  $("riskPct").textContent = risk+"%";
-
-  const warn = $("vidWarn");
-  if(hi.length){
-    warn.classList.add("on");
-    const names = hi.map(i=>DISTRICTS[i][0]).join(", ");
-    const namesTe = hi.map(i=>DISTRICTS[i][1]).join(", ");
-    warn.innerHTML = bi(`⚠️ HIGH RISK OF POWER OUTAGES — winds above 60 km/h expected in: ${names}. Charge phones, inverters & emergency lights NOW.`,
-                        `⚠️ విద్యుత్ అంతరాయ ప్రమాదం — 60 km/h పైగా గాలులు: ${namesTe}. ఫోన్లు, ఇన్వర్టర్లు & ఎమర్జెన్సీ లైట్లు ఇప్పుడే ఛార్జ్ చేసుకోండి.`);
-  } else warn.classList.remove("on");
-
-  $("riskChips").innerHTML =
-    hi.map(i=>`<span class="rchip hi">⚡ ${DISTRICTS[i][0]} · ${Math.round(WX[i].daily.wind_gusts_10m_max[0])} km/h</span>`).join("")+
-    md.map(i=>`<span class="rchip md">💨 ${DISTRICTS[i][0]} · ${Math.round(WX[i].daily.wind_gusts_10m_max[0])} km/h</span>`).join("")||
-    `<span class="rchip md" style="border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.1);color:#7effb0">✅ ${bi("Grid conditions normal in all 26 districts","అన్ని 26 జిల్లాల్లో గ్రిడ్ సాధారణం")}</span>`;
-}
-
 /* ================= RYTU VANI ================= */
 function renderRytu(){
-  const i = +$("rytuDist").value, w = WX[i], dy = w.daily, c = w.current;
+  const i = +$("rytuDist").value;
+  if(i<0 && !CUSTOM) return;
+  const dy = dailyOf(i), c = currentOf(i);
   const rain5 = dy.precipitation_sum.slice(0,5).reduce((a,b)=>a+(b||0),0);
   const probToday = dy.precipitation_probability_max[0]||0;
   const gustToday = dy.wind_gusts_10m_max[0]||0;
@@ -424,8 +513,8 @@ function renderRytu(){
   if(hum>=85 && tmax>=28) crop.push(["🍄",bi("<b>Fungus / pest watch (Mirchi, Paddy, Cotton)</b><span>High humidity — watch for blast, leaf spot & sucking pests. Scout fields daily.</span>","<b>తెగుళ్ల హెచ్చరిక (మిర్చి, వరి, పత్తి)</b><span>అధిక తేమ — అగ్గి తెగులు, ఆకుమచ్చ & రసం పీల్చే పురుగులను గమనించండి.</span>")]);
   if(rain5>=80) crop.push(["🌊",bi("<b>Drainage alert</b><span>Heavy rain expected — clear field drains; protect harvested produce & fertilizer stock.</span>","<b>మురుగు నీటి హెచ్చరిక</b><span>భారీ వర్షాలు — కాలువలు శుభ్రం చేయండి; పంట & ఎరువులను కాపాడుకోండి.</span>")]);
   if(gustToday>=40) crop.push(["🌬️",bi("<b>Wind alert for banana/papaya</b><span>Strong gusts — stake tall crops, delay drone/knapsack spraying.</span>","<b>అరటి/బొప్పాయికి గాలుల హెచ్చరిక</b><span>బలమైన గాలులు — ఊతలు ఇవ్వండి, స్ప్రేయింగ్ వాయిదా వేయండి.</span>")]);
-  if(!crop.length) crop.push(["✅",bi("<b>Normal conditions</b><span>No major weather stress for crops in this district. Continue routine operations.</span>","<b>సాధారణ పరిస్థితులు</b><span>ఈ జిల్లాలో పంటలకు పెద్ద ప్రమాదం లేదు. యథావిధిగా పనులు కొనసాగించండి.</span>")]);
-  crop.push(["📞",bi("<b>Kisan Call Centre: 1800-180-1551</b><span>For crop-specific advisories also see your local KVK / ANGRAU bulletins.</span>","<b>కిసాన్ కాల్ సెంటర్: 1800-180-1551</b><span>పంట వారీ సలహాల కోసం KVK / ANGRAU బులెటిన్లు చూడండి.</span>")]);
+  if(!crop.length) crop.push(["✅",bi("<b>Normal conditions</b><span>No major weather stress for crops in this area. Continue routine operations.</span>","<b>సాధారణ పరిస్థితులు</b><span>ఈ ప్రాంతంలో పంటలకు పెద్ద ప్రమాదం లేదు. యథావిధిగా పనులు కొనసాగించండి.</span>")]);
+  crop.push(["📞",bi("<b>Kisan Call Centre: 1800-180-1551</b><span>For crop-specific advisories also see your local KVK / state agri-university bulletins.</span>","<b>కిసాన్ కాల్ సెంటర్: 1800-180-1551</b><span>పంట వారీ సలహాల కోసం KVK / వ్యవసాయ విశ్వవిద్యాలయ బులెటిన్లు చూడండి.</span>")]);
   $("rytuCrop").innerHTML = crop.map(o=>`<div class="adv-item"><span class="e">${o[0]}</span><div>${o[1]}</div></div>`).join("");
 }
 
@@ -484,7 +573,7 @@ async function refresh(){
   try{
     await fetchAll();
     renderTheme(); renderHero(); renderGrid(); renderForecast();
-    renderCyclone(); renderJala(); renderVidyut();
+    renderCyclone(); renderJala();
     renderRytu(); renderAlerts(); renderSea();
     $("lastRefresh").textContent = new Date().toLocaleTimeString("en-IN",{hour:'2-digit',minute:'2-digit'});
   }catch(e){
@@ -512,67 +601,6 @@ $("fcDist").addEventListener("change",renderForecast);
 $("rytuDist").addEventListener("change",renderRytu);
 $("seaDist").addEventListener("change",renderSea);
 
-/* ================= THREE.JS HERO (globe + clouds + rain + lightning) ================= */
-(function(){
-  if(!window.THREE) return;
-  const box = $("three-bg"); if(!box) return;
-  const scene = new THREE.Scene();
-  const cam = new THREE.PerspectiveCamera(60, box.clientWidth/box.clientHeight, .1, 100);
-  cam.position.z = 7;
-  const ren = new THREE.WebGLRenderer({alpha:true, antialias:true});
-  ren.setSize(box.clientWidth, box.clientHeight);
-  ren.setPixelRatio(Math.min(devicePixelRatio,2));
-  box.appendChild(ren.domElement);
-
-  const globe = new THREE.Group();
-  const gGeo = new THREE.SphereGeometry(2.6, 40, 40);
-  globe.add(new THREE.Points(gGeo, new THREE.PointsMaterial({color:0x9fd0ff, size:.035, transparent:true, opacity:.55})));
-  globe.add(new THREE.Mesh(gGeo, new THREE.MeshBasicMaterial({color:0x0A1931, transparent:true, opacity:.28})));
-  const marker = new THREE.Mesh(new THREE.SphereGeometry(.09,16,16), new THREE.MeshBasicMaterial({color:0xFFC300}));
-  const la=16.5*Math.PI/180, lo=80.6*Math.PI/180;
-  marker.position.set(2.62*Math.cos(la)*Math.sin(lo), 2.62*Math.sin(la), 2.62*Math.cos(la)*Math.cos(lo));
-  globe.add(marker);
-  const ring = new THREE.Mesh(new THREE.RingGeometry(.14,.2,32), new THREE.MeshBasicMaterial({color:0xFFC300,side:THREE.DoubleSide,transparent:true,opacity:.75}));
-  ring.position.copy(marker.position); ring.lookAt(0,0,0);
-  globe.add(ring);
-  globe.position.x = 2.2; globe.rotation.y = -.9;
-  scene.add(globe);
-
-  const rN = 700, rPos = new Float32Array(rN*3);
-  for(let i=0;i<rN;i++){ rPos[i*3]=(Math.random()-.5)*16; rPos[i*3+1]=Math.random()*10-5; rPos[i*3+2]=(Math.random()-.5)*4-1; }
-  const rGeo = new THREE.BufferGeometry();
-  rGeo.setAttribute("position", new THREE.BufferAttribute(rPos,3));
-  const rain = new THREE.Points(rGeo, new THREE.PointsMaterial({color:0x9fd8ff, size:.03, transparent:true, opacity:.5}));
-  rain.visible = false;
-  scene.add(rain);
-  window.__setRain = v => { rain.visible = v; };   // theme engine hooks in here
-
-  const flash = new THREE.PointLight(0xaaddff, 0, 30);
-  flash.position.set(0,3,2); scene.add(flash);
-  let flashT = 0;
-  const hero = $("hero");
-  if(hero) hero.addEventListener("pointermove", ()=>{ if(Math.random()<.006) flashT = 1; });
-
-  let mx=0,my=0;
-  addEventListener("pointermove",e=>{ mx=(e.clientX/innerWidth-.5); my=(e.clientY/innerHeight-.5); });
-  addEventListener("resize",()=>{ cam.aspect=box.clientWidth/box.clientHeight; cam.updateProjectionMatrix(); ren.setSize(box.clientWidth,box.clientHeight); });
-
-  (function loop(){
-    requestAnimationFrame(loop);
-    globe.rotation.y += .0016;
-    if(rain.visible){
-      const p = rGeo.attributes.position.array;
-      for(let i=0;i<rN;i++){ p[i*3+1]-=.045; if(p[i*3+1]<-5) p[i*3+1]=5; }
-      rGeo.attributes.position.needsUpdate = true;
-    }
-    if(flashT>0){ flash.intensity = flashT*6; flashT-=.06; } else flash.intensity = 0;
-    cam.position.x += (mx*.8-cam.position.x)*.04;
-    cam.position.y += (-my*.5-cam.position.y)*.04;
-    cam.lookAt(1,0,0);
-    ren.render(scene,cam);
-  })();
-})();
-
 /* ================= PWA ================= */
 if("serviceWorker" in navigator && location.protocol.startsWith("http")){
   addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
@@ -580,9 +608,9 @@ if("serviceWorker" in navigator && location.protocol.startsWith("http")){
 
 /* ================= BOOT ================= */
 buildScene();
-fillSelects();
-initGeoModal();          // asks location on first load; silent Srikakulam fallback
+refreshSelectOptions();
+initIndiaUI();
+initGeoModal();                       // location on first load; silent Srikakulam fallback
 refresh().then(()=>applyHome());
-fetchAqi();
-setInterval(refresh, 10*60*1000);   // auto-refresh every 10 minutes
+setInterval(refresh, 10*60*1000);     // auto-refresh every 10 minutes
 setInterval(fetchAqi, 30*60*1000);
