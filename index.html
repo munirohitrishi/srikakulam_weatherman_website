@@ -368,6 +368,50 @@ html[data-theme="light"] .al.ok{color:#0c7a3d}
 .ig-cta h3{margin:10px 0 4px;font-weight:800}
 .ig-cta p{color:var(--txt2);font-size:.85rem;margin-bottom:18px}
 
+/* ================= MAUSAM VANI VOICE ASSISTANT ================= */
+#mvFab{position:fixed;right:20px;bottom:20px;z-index:200;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;
+  border:none;background:none;font-family:inherit}
+#mvFab .orb{width:66px;height:66px;border-radius:50%;display:grid;place-items:center;font-size:1.8rem;
+  background:linear-gradient(135deg,#185ADB,#00C9FF);box-shadow:0 10px 30px rgba(0,150,255,.55),0 0 0 0 rgba(0,201,255,.5);
+  transition:.25s}
+#mvFab:hover .orb{transform:translateY(-3px) scale(1.05)}
+#mvFab.speaking .orb{background:linear-gradient(135deg,#22c55e,#00C9FF);animation:mvpulse 1.1s infinite}
+#mvFab.listening .orb{background:linear-gradient(135deg,#FFC300,#ff8a00);animation:mvpulse .8s infinite}
+@keyframes mvpulse{0%{box-shadow:0 10px 30px rgba(0,150,255,.55),0 0 0 0 rgba(0,201,255,.55)}70%{box-shadow:0 10px 30px rgba(0,150,255,.55),0 0 0 16px rgba(0,201,255,0)}100%{box-shadow:0 10px 30px rgba(0,150,255,.55),0 0 0 0 rgba(0,201,255,0)}}
+#mvFab .lbl{font-size:.62rem;font-weight:800;color:#fff;background:rgba(10,25,49,.7);padding:3px 9px;border-radius:999px;backdrop-filter:blur(6px);white-space:nowrap;letter-spacing:.3px}
+body.theme-sunny #mvFab .lbl{background:rgba(10,25,49,.55)}
+@media(max-width:600px){#mvFab{right:14px;bottom:14px}#mvFab .orb{width:60px;height:60px}}
+
+#mvPanel{position:fixed;right:20px;bottom:100px;z-index:201;width:340px;max-width:calc(100vw - 32px);padding:22px;border-radius:26px;
+  transform:translateY(20px) scale(.96);opacity:0;pointer-events:none;transition:.3s}
+#mvPanel.on{transform:none;opacity:1;pointer-events:auto}
+@media(max-width:600px){#mvPanel{bottom:88px;right:14px}}
+.mv-head{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.mv-head .av{width:46px;height:46px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:1.4rem;background:linear-gradient(135deg,#185ADB,#00C9FF);box-shadow:0 4px 14px rgba(0,160,255,.5)}
+.mv-head h4{font-size:1.05rem;font-weight:800;line-height:1.15}
+.mv-head small{color:var(--txt2);font-weight:600;font-size:.7rem}
+.mv-close{margin-left:auto;background:none;border:none;color:var(--txt2);font-size:1.3rem;cursor:pointer;line-height:1}
+.mv-status{font-size:.78rem;color:var(--txt2);font-weight:700;margin:8px 0 4px;min-height:20px}
+.mv-live{font-size:.9rem;line-height:1.55;font-weight:600;margin-bottom:14px;max-height:150px;overflow-y:auto}
+.mv-btns{display:grid;gap:9px}
+.mvb{display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:13px 15px;border-radius:16px;cursor:pointer;
+  font-family:inherit;font-weight:700;font-size:.92rem;color:var(--txt);border:1.5px solid var(--card-brd);transition:.2s;
+  background:rgba(255,255,255,.08);min-height:52px}
+html[data-theme="light"] .mvb,body.theme-sunny .mvb{background:rgba(255,255,255,.55)}
+.mvb:hover{transform:translateX(3px);border-color:var(--txt)}
+.mvb .e{font-size:1.35rem;flex:none}
+.mvb.b1{border-left:4px solid #00C9FF}
+.mvb.b2{border-left:4px solid #22c55e}
+.mvb.b3{border-left:4px solid #185ADB}
+.mvb.b4{border-left:4px solid #FFC300}
+.mv-foot{display:flex;gap:8px;margin-top:12px}
+.mv-foot button{flex:1;padding:10px;border-radius:14px;border:1.5px solid var(--card-brd);background:rgba(255,255,255,.08);color:var(--txt);font-family:inherit;font-weight:800;font-size:.8rem;cursor:pointer}
+html[data-theme="light"] .mv-foot button,body.theme-sunny .mv-foot button{background:rgba(255,255,255,.5)}
+.mv-foot button:hover{border-color:var(--txt)}
+.mv-warn{font-size:.72rem;color:#ffd75e;background:rgba(255,195,0,.12);border:1px solid rgba(255,195,0,.4);border-radius:12px;padding:9px 12px;margin-bottom:12px;line-height:1.5;display:none}
+body.theme-sunny .mv-warn{color:#8a6500}
+.mv-warn.on{display:block}
+
 /* ================= FOOTER ================= */
 footer{border-top:1px solid var(--card-brd);padding:36px 0 28px;margin-top:40px;background:rgba(3,10,25,.4);backdrop-filter:blur(14px)}
 html[data-theme="light"] footer{background:rgba(255,255,255,.45)}
@@ -728,6 +772,35 @@ html[data-theme="light"] footer{background:rgba(255,255,255,.45)}
     </div>
   </div>
 </section>
+
+<!-- ================= MAUSAM VANI VOICE ASSISTANT ================= -->
+<div id="mvPanel" class="glass" role="dialog" aria-label="Mausam Vani voice assistant">
+  <div class="mv-head">
+    <div class="av">🎙️</div>
+    <div>
+      <h4>మౌసం వాణి</h4>
+      <small class="en">Voice Assistant · Speaks Telugu</small><small class="te">వాయిస్ అసిస్టెంట్ · తెలుగులో మాట్లాడుతుంది</small>
+    </div>
+    <button class="mv-close" id="mvClose" aria-label="Close">✕</button>
+  </div>
+  <div class="mv-warn" id="mvWarn"></div>
+  <div class="mv-status" id="mvStatus">నొక్కండి — వాతావరణం తెలుగులో వింటారు 🔊</div>
+  <div class="mv-live" id="mvLive"></div>
+  <div class="mv-btns">
+    <button class="mvb b1" data-say="weather"><span class="e">🌤️</span> ప్రస్తుత వాతావరణం చెప్పు</button>
+    <button class="mvb b2" data-say="farmer"><span class="e">🌾</span> రైతులకు సలహా</button>
+    <button class="mvb b3" data-say="fisher"><span class="e">🎣</span> మత్స్యకారులకు సలహా</button>
+    <button class="mvb b4" data-say="cyclone"><span class="e">🌀</span> సైక్లోన్ అలర్ట్</button>
+  </div>
+  <div class="mv-foot">
+    <button id="mvStop">⏹️ ఆపు / Stop</button>
+    <button id="mvRepeat">🔁 మళ్లీ / Repeat</button>
+  </div>
+</div>
+<button id="mvFab" aria-label="Open Mausam Vani voice assistant" aria-expanded="false">
+  <span class="orb" id="mvOrb">🎙️</span>
+  <span class="lbl">మౌసం వాణి · Voice</span>
+</button>
 
 <!-- ================= FOOTER ================= -->
 <footer>

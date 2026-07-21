@@ -601,6 +601,172 @@ $("fcDist").addEventListener("change",renderForecast);
 $("rytuDist").addEventListener("change",renderRytu);
 $("seaDist").addEventListener("change",renderSea);
 
+/* ================================================================
+   MAUSAM VANI — TELUGU VOICE ASSISTANT (Web Speech Synthesis)
+   ----------------------------------------------------------------
+   Speaks simple, spoken Telugu (not formal written Telugu) so that
+   elderly & rural users can follow. Numbers are converted to Telugu
+   words and speech rate is slowed for clarity. Falls back gracefully
+   if no Telugu (te-IN) voice is installed on the device.
+   ================================================================ */
+const MV = { last:"", voice:null, ready:("speechSynthesis" in window) };
+
+/* Telugu number words 0–100 (spoken form) */
+const TE_UNITS=["సున్నా","ఒకటి","రెండు","మూడు","నాలుగు","ఐదు","ఆరు","ఏడు","ఎనిమిది","తొమ్మిది","పది",
+ "పదకొండు","పన్నెండు","పదమూడు","పద్నాలుగు","పదిహేను","పదహారు","పదిహేడు","పద్దెనిమిది","పంతొమ్మిది"];
+const TE_TENS={20:"ఇరవై",30:"ముప్పై",40:"నలభై",50:"యాభై",60:"అరవై",70:"డెబ్బై",80:"ఎనభై",90:"తొంభై"};
+function teNum(n){
+  n=Math.round(n);
+  if(n<0) return "మైనస్ "+teNum(-n);
+  if(n<20) return TE_UNITS[n];
+  if(n===100) return "వంద";
+  if(n>100) return String(n);                 // rare; let engine read digits
+  const t=Math.floor(n/10)*10, u=n%10;
+  return u===0 ? TE_TENS[t] : TE_TENS[t]+" "+TE_UNITS[u];
+}
+
+function pickTeluguVoice(){
+  if(!MV.ready) return null;
+  const vs = speechSynthesis.getVoices()||[];
+  return vs.find(v=>v.lang==="te-IN") || vs.find(v=>/^te(-|_|$)/i.test(v.lang)) ||
+         vs.find(v=>/telugu/i.test(v.name)) || null;
+}
+function initVoices(){
+  MV.voice = pickTeluguVoice();
+  const warn = $("mvWarn");
+  if(MV.ready && !MV.voice){
+    warn.classList.add("on");
+    warn.innerHTML = "ℹ️ మీ ఫోన్‌లో తెలుగు వాయిస్ లేదు — డిఫాల్ట్ వాయిస్‌తో చదువుతుంది. తెలుగు వాయిస్ కోసం: Settings → Language → Add Telugu (offline speech).";
+  }else if(!MV.ready){
+    warn.classList.add("on");
+    warn.textContent = "ℹ️ ఈ బ్రౌజర్ వాయిస్‌కు మద్దతు ఇవ్వదు. Chrome లేదా Edge వాడండి.";
+  }else{ warn.classList.remove("on"); }
+}
+if(MV.ready){ speechSynthesis.onvoiceschanged = initVoices; }
+
+function speak(text){
+  if(!MV.ready){ $("mvStatus").textContent="వాయిస్ అందుబాటులో లేదు"; return; }
+  MV.last = text;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "te-IN";
+  if(MV.voice) u.voice = MV.voice;
+  u.rate = 0.82;              // slower & clearer for elderly / rural users
+  u.pitch = 1.0; u.volume = 1;
+  u.onstart = ()=>{ setMvState("speaking"); $("mvStatus").textContent="🔊 చెప్తోంది…"; };
+  u.onend   = ()=>{ setMvState(""); $("mvStatus").textContent="పూర్తయింది ✅ మళ్లీ నొక్కండి"; };
+  u.onerror = ()=>{ setMvState(""); $("mvStatus").textContent="మళ్లీ ప్రయత్నించండి"; };
+  speechSynthesis.speak(u);
+}
+function setMvState(s){
+  const fab=$("mvFab"); if(!fab) return;
+  fab.classList.remove("speaking","listening");
+  $("mvOrb").textContent = s==="speaking"?"🔊":s==="listening"?"👂":"🎙️";
+  if(s) fab.classList.add(s);
+}
+
+/* ---- phrase builders: read LIVE data as spoken Telugu ---- */
+function placeNameTe(){ return HOME_IDX>=0 ? DISTRICTS[HOME_IDX][1] : (CUSTOM?CUSTOM.name:"మీ ప్రాంతం"); }
+function sayWeather(){
+  const w = homeWx(); if(!w) return "డేటా లోడ్ అవుతోంది. కాసేపటి తర్వాత ప్రయత్నించండి.";
+  const c=w.current, dy=w.daily, ic=wmo(c.weather_code);
+  const t = `${placeNameTe()} లో ప్రస్తుత వాతావరణం. `+
+    `ఉష్ణోగ్రత ${teNum(c.temperature_2m)} డిగ్రీలు. `+
+    `${ic[2]}. `+
+    `అనుభూతి ${teNum(c.apparent_temperature)} డిగ్రీలు. `+
+    `గాలిలో తేమ ${teNum(c.relative_humidity_2m)} శాతం. `+
+    `గాలి వేగం గంటకు ${teNum(c.wind_speed_10m)} కిలోమీటర్లు. `+
+    `ఈ రోజు గరిష్ఠం ${teNum(dy.temperature_2m_max[0])}, కనిష్ఠం ${teNum(dy.temperature_2m_min[0])} డిగ్రీలు. `+
+    `వర్షం పడే అవకాశం ${teNum(dy.precipitation_probability_max[0]||0)} శాతం.`;
+  return t;
+}
+function sayFarmer(){
+  const i = HOME_IDX>=0?HOME_IDX:-1;
+  const dy = i<0 ? (CUSTOM&&CUSTOM.wx&&CUSTOM.wx.daily) : WX[i].daily;
+  if(!dy) return "డేటా లోడ్ అవుతోంది.";
+  const rain5 = dy.precipitation_sum.slice(0,5).reduce((a,b)=>a+(b||0),0);
+  const prob = dy.precipitation_probability_max[0]||0, gust = dy.wind_gusts_10m_max[0]||0;
+  let t = `రైతు సోదరులకు సలహా. `+
+    `రాబోయే ఐదు రోజుల్లో సుమారు ${teNum(rain5)} మిల్లీమీటర్ల వర్షం పడొచ్చు. `;
+  if(prob<30 && gust<25) t += `ఈ రోజు వర్షం అవకాశం తక్కువ, గాలి కూడా తక్కువ. పంటలకు మందు కొట్టడానికి, పురుగుమందు పిచికారీకి మంచి రోజు. `;
+  else t += `ఈ రోజు వర్షం లేదా గాలి ఎక్కువ. మందు కొడితే కొట్టుకుపోతుంది, ఈ రోజు పిచికారీ వద్దు. `;
+  if(rain5>=40) t += `మంచి వర్షాలు వస్తున్నాయి, వరి నాట్లకు అనుకూలం. `;
+  else if(rain5<10) t += `వర్షం చాలా తక్కువ. విత్తనం వాయిదా వేసి, నీటి తడులు ప్లాన్ చేసుకోండి. `;
+  t += `మరిన్ని వివరాలకు కిసాన్ కాల్ సెంటర్ ఒన్ ఎయిట్ డబుల్ ఓ, ఒన్ ఎయిట్ ఓ, ఫిఫ్టీన్ ఫిఫ్టీ ఒన్ కి కాల్ చేయండి.`;
+  return t;
+}
+function sayFisher(){
+  /* use nearest coastal district's gusts as a proxy when home is inland */
+  let i = (HOME_IDX>=0 && DISTRICTS[HOME_IDX][4]) ? HOME_IDX : SRI_IDX;
+  const gust = WX[i].daily.wind_gusts_10m_max[0]||0, wind = WX[i].current.wind_speed_10m;
+  let t = `మత్స్యకార సోదరులకు సలహా. ${DISTRICTS[i][1]} తీరం. `+
+    `గాలి వేగం గంటకు ${teNum(wind)} కిలోమీటర్లు, గరిష్ఠ గాలులు ${teNum(gust)} కిలోమీటర్లు. `;
+  if(gust>45) t += `సముద్రం అల్లకల్లోలంగా ఉంది. ఈ రోజు వేటకు వెళ్లొద్దు. పడవలు తీరానికి తిరిగి రండి. `;
+  else if(gust>35) t += `కొంచెం జాగ్రత్త. తీరానికి దగ్గరగానే ఉండండి, లోతు సముద్రానికి వెళ్లొద్దు. లైఫ్ జాకెట్ తప్పకుండా వేసుకోండి. `;
+  else t += `సముద్రం సాధారణంగా ఉంది. వేటకు అనుకూలం. అయినా లైఫ్ జాకెట్, జీపీఎస్ తీసుకెళ్లండి. `;
+  t += `అత్యవసరమైతే ఒన్ ఓ నైన్ త్రీ కి, లేదా కోస్ట్ గార్డ్ ఒన్ ఫైవ్ ఫైవ్ ఫోర్ కి కాల్ చేయండి. అధికారిక హెచ్చరికల కోసం ఐ ఎం డి చూడండి.`;
+  return t;
+}
+function sayCyclone(){
+  const coastal = DISTRICTS.map((d,i)=>({d,i})).filter(x=>x.d[4]);
+  let active=false, worst=0, wi=SRI_IDX;
+  coastal.forEach(({d,i})=>{ const g=WX[i].daily.wind_gusts_10m_max[0]||0;
+    if(WX[i].current.weather_code>=95||g>=60) active=true;
+    if(g>worst){worst=g;wi=i;} });
+  let t = `సైక్లోన్ అలర్ట్. `;
+  if(active) t += `ఆంధ్రప్రదేశ్ తీరంలో తుఫాను పరిస్థితులు ఉన్నాయి. ${DISTRICTS[wi][1]} వద్ద గాలులు గంటకు ${teNum(worst)} కిలోమీటర్ల వరకు వీస్తున్నాయి. `+
+    `తీర ప్రజలు జాగ్రత్తగా ఉండండి. అవసరమైతే దగ్గరి సైక్లోన్ షెల్టర్‌కు వెళ్లండి. ఫోన్లు, ఎమర్జెన్సీ లైట్లు ఛార్జ్ చేసుకోండి. `+
+    `సహాయం కోసం ఒన్ ఓ సెవెన్ జీరో, లేదా జిల్లా కంట్రోల్ రూమ్ ఒన్ ఓ డబుల్ సెవెన్ కి కాల్ చేయండి.`;
+  else t += `ప్రస్తుతం ఆంధ్రప్రదేశ్ తీరానికి ఎలాంటి తుఫాను హెచ్చరిక లేదు. సముద్రం, బంగాళాఖాతం ప్రశాంతంగా ఉన్నాయి. అంతా క్షేమం. `+
+    `అయినా వాతావరణ అప్‌డేట్స్ కోసం మౌసం వాణి, శ్రీకాకుళం వెదర్‌మ్యాన్ ఫాలో అవ్వండి.`;
+  return t;
+}
+const MV_SAY = { weather:sayWeather, farmer:sayFarmer, fisher:sayFisher, cyclone:sayCyclone };
+
+/* ---- optional voice INPUT (mic) — matches keyword to a preset ---- */
+function startListening(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){ togglePanel(true); return; }               // no recognition → just open panel
+  const r = new SR(); r.lang="te-IN"; r.interimResults=false; r.maxAlternatives=1;
+  setMvState("listening"); $("mvStatus").textContent="👂 వినుతోంది… చెప్పండి";
+  r.onresult = e=>{
+    const s=(e.results[0][0].transcript||"").toLowerCase();
+    let key="weather";
+    if(/రైతు|farmer|పంట|వ్యవసాయ/.test(s)) key="farmer";
+    else if(/మత్స్య|చేప|fish|సముద్ర|వేట/.test(s)) key="fisher";
+    else if(/సైక్లోన్|తుఫాన|cyclone|storm|గాలి/.test(s)) key="cyclone";
+    runSay(key);
+  };
+  r.onerror = ()=>{ setMvState(""); $("mvStatus").textContent="వినపడలేదు. బటన్ నొక్కండి."; };
+  r.onend = ()=>{ if($("mvFab").classList.contains("listening")) setMvState(""); };
+  try{ r.start(); }catch(e){ togglePanel(true); }
+}
+
+function runSay(key){
+  const fn = MV_SAY[key]; if(!fn) return;
+  const text = fn();
+  $("mvLive").textContent = text;                     // show on-screen for the deaf/hard-of-hearing
+  speak(text);
+}
+function togglePanel(open){
+  const p=$("mvPanel"), fab=$("mvFab");
+  const show = open!==undefined ? open : !p.classList.contains("on");
+  p.classList.toggle("on", show);
+  fab.setAttribute("aria-expanded", show?"true":"false");
+}
+(function initMausamVani(){
+  if(MV.ready) initVoices();                           // some browsers have voices immediately
+  $("mvFab").addEventListener("click", ()=>{
+    const p=$("mvPanel");
+    if(p.classList.contains("on")) startListening();   // panel already open → mic
+    else togglePanel(true);
+  });
+  $("mvClose").addEventListener("click", ()=>{ speechSynthesis && speechSynthesis.cancel(); setMvState(""); togglePanel(false); });
+  document.querySelectorAll(".mvb").forEach(b=>b.addEventListener("click", ()=>runSay(b.dataset.say)));
+  $("mvStop").addEventListener("click", ()=>{ if(MV.ready) speechSynthesis.cancel(); setMvState(""); $("mvStatus").textContent="ఆపేశాను ⏹️"; });
+  $("mvRepeat").addEventListener("click", ()=>{ if(MV.last) speak(MV.last); });
+})();
+
 /* ================= PWA ================= */
 if("serviceWorker" in navigator && location.protocol.startsWith("http")){
   addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
